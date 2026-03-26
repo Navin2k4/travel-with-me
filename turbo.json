@@ -1,10 +1,22 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalEnv": [
+    "UPLOADTHING_TOKEN",
+    "CORS_ORIGIN",
+    "DATABASE_URL",
+    "DIRECT_URL"
+  ],
   "ui": "tui",
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": [
+        "UPLOADTHING_TOKEN",
+        "CORS_ORIGIN",
+        "DATABASE_URL",
+        "DIRECT_URL"
+      ],
       "outputs": ["dist/**", ".next/**"]
     },
     "lint": {
