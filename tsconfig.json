@@ -1,0 +1,3 @@
+{
+  "extends": "@travel-with-me/config/tsconfig.base.json"
+}
