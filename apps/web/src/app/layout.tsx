@@ -1,24 +1,20 @@
 import type { Metadata } from "next";
+import favicon from "@/favicon.ico";
 
-import { Geist, Geist_Mono } from "next/font/google";
 
-import "../index.css";
 import Header from "@/components/header";
 import Providers from "@/components/providers";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import "../index.css";
+import { AuthFooter } from "@/components/auth/auth-footer";
 
 export const metadata: Metadata = {
-  title: "travel-with-me",
-  description: "travel-with-me",
+  title: "Travel With Me",
+  description: "Travel With Me",
+  icons: {
+    icon: favicon.src,
+    shortcut: favicon.src,
+    apple: favicon.src,
+  },
 };
 
 export default function RootLayout({
@@ -27,13 +23,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="en" suppressHydrationWarning >
+      <body className={`antialiased`}>
         <Providers>
-          <div className="grid grid-rows-[auto_1fr] h-svh">
+          <div className="min-h-screen">
             <Header />
-            {children}
+            <div>{children}</div>
           </div>
+          <AuthFooter />
         </Providers>
       </body>
     </html>

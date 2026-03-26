@@ -1,3 +1,12 @@
 {
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "apps/*",
+        "packages/*"
+      ]
+    }
+  },
   "extends": "@travel-with-me/config/tsconfig.base.json"
 }
