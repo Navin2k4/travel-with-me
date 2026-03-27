@@ -44,7 +44,9 @@ export function AddPlaceModal({
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [category, setCategory] = useState<"ATTRACTION" | "FOOD" | "STAY" | "SHOPPING" | "OTHER">("OTHER");
-  const [visitedAt, setVisitedAt] = useState("");
+  const [visitedDate, setVisitedDate] = useState("");
+  const [fromTime, setFromTime] = useState("");
+  const [toTime, setToTime] = useState("");
   const [notes, setNotes] = useState("");
   const [rating, setRating] = useState("");
   const [tagInput, setTagInput] = useState("");
@@ -69,13 +71,20 @@ export function AddPlaceModal({
 
   const submit = () => {
     startTransition(async () => {
+      const visitedAt = visitedDate && fromTime ? `${visitedDate}T${fromTime}` : "";
+      const durationNote =
+        visitedDate && (fromTime || toTime)
+          ? `Time: ${visitedDate} ${fromTime || "--:--"} to ${toTime || "--:--"}`
+          : "";
+      const mergedNotes = [notes.trim(), durationNote].filter(Boolean).join("\n");
+
       const result = await createVisitedPlaceAction({
         tripId,
         addedById,
         name,
         category,
         visitedAt: visitedAt || undefined,
-        notes: notes || undefined,
+        notes: mergedNotes || undefined,
         tags,
         visitorIds,
         expenseIds,
@@ -100,7 +109,9 @@ export function AddPlaceModal({
       toast.success("Place added.");
       setName("");
       setCategory("OTHER");
-      setVisitedAt("");
+      setVisitedDate("");
+      setFromTime("");
+      setToTime("");
       setNotes("");
       setRating("");
       setTags([]);
@@ -125,112 +136,161 @@ export function AddPlaceModal({
       <DialogTrigger asChild>
         <Button>Add Place</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="w-md md:min-w-4xl">
         <DialogHeader>
           <DialogTitle>Add Visited Place</DialogTitle>
-          <DialogDescription>Only name is required. You can enrich details later.</DialogDescription>
+          <DialogDescription>Capture place details with schedule, people, images, and linked expenses.</DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-3">
-          <div className="grid gap-2">
-            <Label htmlFor="place-name">Name *</Label>
-            <Input id="place-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Tea shop" />
-          </div>
-          <div className="grid gap-2">
-            <Label>Category</Label>
-            <Select value={category} onValueChange={(v) => setCategory(v as typeof category)}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ATTRACTION">Attraction</SelectItem>
-                <SelectItem value="FOOD">Food</SelectItem>
-                <SelectItem value="STAY">Stay</SelectItem>
-                <SelectItem value="SHOPPING">Shopping</SelectItem>
-                <SelectItem value="OTHER">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-3">
             <div className="grid gap-2">
-              <Label>Visited Date & Time</Label>
-              <Input type="datetime-local" value={visitedAt} onChange={(e) => setVisitedAt(e.target.value)} />
+              <Label htmlFor="place-name">Name *</Label>
+              <Input id="place-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Tea shop" />
+            </div>
+            <div className="grid gap-2">
+              <Label>Category</Label>
+              <Select value={category} onValueChange={(v) => setCategory(v as typeof category)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ATTRACTION">Attraction</SelectItem>
+                  <SelectItem value="FOOD">Food</SelectItem>
+                  <SelectItem value="STAY">Stay</SelectItem>
+                  <SelectItem value="SHOPPING">Shopping</SelectItem>
+                  <SelectItem value="OTHER">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>Visit Schedule (Date-From-To)</Label>
+              <div className="grid  sm:grid-cols-3">
+                <Input type="date" value={visitedDate} onChange={(e) => setVisitedDate(e.target.value)} />
+                <div className="grid gap-1">
+                  <Input type="time" value={fromTime} onChange={(e) => setFromTime(e.target.value)} />
+                </div>
+                <div className="grid gap-1">
+                  <Input type="time" value={toTime} onChange={(e) => setToTime(e.target.value)} />
+                </div>
+              </div>
             </div>
             <div className="grid gap-2">
               <Label>Rating (1-5)</Label>
               <Input type="number" min="1" max="5" value={rating} onChange={(e) => setRating(e.target.value)} />
             </div>
-          </div>
-          <div className="grid gap-2">
-            <Label>Notes</Label>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Memories..." />
-          </div>
-          <div className="grid gap-2">
-            <Label>Tags</Label>
-            <div className="flex gap-2">
-              <Input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="e.g. sunrise" />
-              <Button variant="outline" type="button" onClick={addTag}>
-                Add
-              </Button>
+            <div className="grid gap-2">
+              <Label>Notes</Label>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Memories..." />
             </div>
-            <div className="flex flex-wrap gap-1">
-              {tags.map((tag) => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          </div>
-          <div className="grid gap-2">
-            <Label>Place Images (optional)</Label>
-            <UploadButton
-              endpoint="placeImageUploader"
-              onClientUploadComplete={(files) => {
-                const urls = (files ?? []).map((f) => f.ufsUrl);
-                if (urls.length === 0) return;
-                setUploadedImageUrls((current) => [...new Set([...current, ...urls])]);
-                toast.success("Place image(s) uploaded.");
-              }}
-              onUploadError={(error: Error) => {
-                toast.error(error.message);
-              }}
-            />
-            {uploadedImageUrls.length > 0 && (
-              <div className="grid grid-cols-3 gap-2">
-                {uploadedImageUrls.map((url) => (
-                  <img key={url} src={url} alt="Place upload preview" className="h-20 w-full rounded object-cover" />
+            <div className="grid gap-2">
+              <Label>Tags</Label>
+              <div className="flex gap-2">
+                <Input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="e.g. sunrise" />
+                <Button variant="outline" type="button" onClick={addTag}>
+                  Add
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {tags.map((tag) => (
+                  <Badge key={tag} variant="secondary">
+                    {tag}
+                  </Badge>
                 ))}
               </div>
-            )}
-          </div>
-          <div className="grid gap-2">
-            <Label>Participants</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {participants.map((user) => (
-                <Button
-                  key={user.id}
-                  type="button"
-                  variant={visitorIds.includes(user.id) ? "default" : "outline"}
-                  onClick={() => toggleId(user.id, setVisitorIds)}
-                >
-                  {user.name}
-                </Button>
-              ))}
             </div>
           </div>
-          <div className="grid gap-2">
-            <Label>Link expenses (optional)</Label>
-            <div className="flex flex-wrap gap-2">
-              {expenses.map((expense) => (
-                <Button
-                  key={expense.id}
-                  type="button"
-                  variant={expenseIds.includes(expense.id) ? "default" : "outline"}
-                  onClick={() => toggleId(expense.id, setExpenseIds)}
-                >
-                  {expense.title}
-                </Button>
-              ))}
+
+          <div className="grid gap-3">
+            <div className="grid gap-2">
+              <Label>Place Images (optional)</Label>
+              <div className="relative overflow-hidden rounded-lg border bg-muted/30">
+                {uploadedImageUrls.length > 0 ? (
+                  <>
+                    <img
+                      src={uploadedImageUrls[0]}
+                      alt="Place upload preview"
+                      className="h-44 w-full object-cover"
+                    />
+                    <div className="absolute bottom-3 right-3">
+                      <UploadButton
+                        endpoint="placeImageUploader"
+                        appearance={{
+                          button:
+                            "h-8 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 ut-uploading:cursor-not-allowed ut-uploading:bg-primary/80 ut-uploading:text-primary-foreground",
+                          allowedContent: "hidden",
+                        }}
+                        content={{
+                          button: () => "Update Images",
+                        }}
+                        onClientUploadComplete={(files) => {
+                          const urls = (files ?? []).map((f) => f.ufsUrl);
+                          if (urls.length === 0) return;
+                          setUploadedImageUrls((current) => [...new Set([...current, ...urls])]);
+                          toast.success("Place image(s) uploaded.");
+                        }}
+                        onUploadError={(error: Error) => {
+                          toast.error(error.message);
+                        }}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="p-3">
+                    <UploadButton
+                      endpoint="placeImageUploader"
+                      appearance={{
+                        button:
+                          "h-9 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 ut-uploading:cursor-not-allowed ut-uploading:bg-primary/80 ut-uploading:text-primary-foreground",
+                        allowedContent: "text-xs text-muted-foreground",
+                      }}
+                      content={{
+                        button: () => "Upload Images",
+                        allowedContent: () => "PNG, JPG, WEBP up to 4MB each",
+                      }}
+                      onClientUploadComplete={(files) => {
+                        const urls = (files ?? []).map((f) => f.ufsUrl);
+                        if (urls.length === 0) return;
+                        setUploadedImageUrls((current) => [...new Set([...current, ...urls])]);
+                        toast.success("Place image(s) uploaded.");
+                      }}
+                      onUploadError={(error: Error) => {
+                        toast.error(error.message);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>Participants</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {participants.map((user) => (
+                  <Button
+                    key={user.id}
+                    type="button"
+                    variant={visitorIds.includes(user.id) ? "default" : "outline"}
+                    onClick={() => toggleId(user.id, setVisitorIds)}
+                  >
+                    {user.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>Link expenses (optional)</Label>
+              <div className="flex flex-wrap gap-2">
+                {expenses.map((expense) => (
+                  <Button
+                    key={expense.id}
+                    type="button"
+                    variant={expenseIds.includes(expense.id) ? "default" : "outline"}
+                    onClick={() => toggleId(expense.id, setExpenseIds)}
+                  >
+                    {expense.title}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

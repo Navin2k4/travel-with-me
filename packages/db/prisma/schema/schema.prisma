@@ -33,6 +33,15 @@ enum RecurrenceRule {
   YEARLY
 }
 
+enum PaymentMode {
+  CASH
+  CARD
+  UPI
+  BANK_TRANSFER
+  WALLET
+  OTHER
+}
+
 enum ParticipantPresetTag {
   FOR_FUN
   TRAVEL_ANALYST
@@ -186,6 +195,7 @@ model Expense {
   amountMinor   Int
   currency      String            @default("INR")
   paidById      String
+  paymentMode   PaymentMode        @default(CASH)
   splitType     SplitType
   splitDetails  Json?
   category      ExpenseCategory   @default(OTHER)

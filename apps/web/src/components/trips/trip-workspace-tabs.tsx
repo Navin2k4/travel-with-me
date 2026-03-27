@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { PencilSimpleIcon } from "@phosphor-icons/react";
+import { PencilSimpleIcon, TrashIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { AddExpenseForm } from "@/components/expenses/add-expense-form";
 import { VisitedPlacesPanel } from "@/components/places/visited-places-panel";
@@ -35,7 +35,12 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { generateSettlementAction } from "@/lib/actions/expenses";
+import {
+  deleteExpenseAction,
+  generateSettlementAction,
+  settleSettlementAction,
+  updateExpenseAction,
+} from "@/lib/actions/expenses";
 import { assignParticipantTagAction, reviewJoinRequestAction, updateTripAction } from "@/lib/actions/trips";
 import { DEFAULT_USER_AVATAR_URL } from "@/lib/constants";
 import { formatCurrency } from "@/lib/format";
@@ -50,7 +55,10 @@ type ParticipantView = {
 type ExpenseView = {
   id: string;
   title: string;
+  notes: string | null;
+  paidById: string;
   paidByName: string;
+  paymentMode: "CASH" | "CARD" | "UPI" | "BANK_TRANSFER" | "WALLET" | "OTHER";
   amountMinor: number;
   currency: string;
 };
@@ -133,6 +141,14 @@ export function TripWorkspaceTabs({
   const [startDate, setStartDate] = useState(trip.startDate ?? "");
   const [endDate, setEndDate] = useState(trip.endDate ?? "");
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null);
+  const [expenseTitle, setExpenseTitle] = useState("");
+  const [expenseNotes, setExpenseNotes] = useState("");
+  const [expensePaidById, setExpensePaidById] = useState("");
+  const [expensePaymentMode, setExpensePaymentMode] = useState<
+    "CASH" | "CARD" | "UPI" | "BANK_TRANSFER" | "WALLET" | "OTHER"
+  >("CASH");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [tagInput, setTagInput] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -176,6 +192,7 @@ export function TripWorkspaceTabs({
   };
 
   const selectedParticipant = participants.find((participant) => participant.id === selectedUserId) ?? null;
+  const selectedExpense = expenses.find((expense) => expense.id === selectedExpenseId) ?? null;
 
   const openTagModal = (userId: string) => {
     setSelectedUserId(userId);
@@ -202,6 +219,59 @@ export function TripWorkspaceTabs({
       toast.success("Custom tag assigned.");
       setTagInput("");
       setIsTagModalOpen(false);
+    });
+  };
+
+  const openExpenseModal = (expenseId: string) => {
+    const expense = expenses.find((item) => item.id === expenseId);
+    if (!expense) return;
+    setSelectedExpenseId(expenseId);
+    setExpenseTitle(expense.title);
+    setExpenseNotes(expense.notes ?? "");
+    setExpensePaidById(expense.paidById);
+    setExpensePaymentMode(expense.paymentMode);
+    setIsExpenseModalOpen(true);
+  };
+
+  const saveExpense = () => {
+    if (!selectedExpenseId) return;
+    startTransition(async () => {
+      const result = await updateExpenseAction({
+        expenseId: selectedExpenseId,
+        tripId: trip.id,
+        title: expenseTitle,
+        notes: expenseNotes,
+        paidById: expensePaidById,
+        paymentMode: expensePaymentMode,
+      });
+      if (!result.ok) {
+        toast.error(typeof result.error === "string" ? result.error : "Failed to update expense.");
+        return;
+      }
+      toast.success("Expense updated.");
+      setIsExpenseModalOpen(false);
+    });
+  };
+
+  const removeExpense = (expenseId: string) => {
+    startTransition(async () => {
+      const result = await deleteExpenseAction({ expenseId, tripId: trip.id });
+      if (!result.ok) {
+        toast.error(typeof result.error === "string" ? result.error : "Failed to delete expense.");
+        return;
+      }
+      toast.success("Expense deleted.");
+    });
+  };
+
+  const settleItem = (settlementId: string) => {
+    startTransition(async () => {
+      const result = await settleSettlementAction({ settlementId, tripId: trip.id });
+      if (!result.ok) {
+        toast.error(typeof result.error === "string" ? result.error : "Failed to settle.");
+        return;
+      }
+      toast.success("Marked as settled.");
     });
   };
 
@@ -232,10 +302,6 @@ export function TripWorkspaceTabs({
       <TabsContent value="trip-detail">
         <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
           <Card>
-            <CardHeader>
-              <CardTitle>Trip Summary & Edit</CardTitle>
-              <CardDescription>Maintain trip title, description, and schedule.</CardDescription>
-            </CardHeader>
             <CardContent className="grid gap-3">
               <div className="grid gap-2">
                 <Label htmlFor="workspace-trip-title">Trip Title</Label>
@@ -353,9 +419,6 @@ export function TripWorkspaceTabs({
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Trip Stats</CardTitle>
-            </CardHeader>
             <CardContent className="grid gap-2">
               <div>
                 {currentUserId === trip.createdById && (
@@ -538,7 +601,9 @@ export function TripWorkspaceTabs({
                       <TableRow>
                         <TableHead>Title</TableHead>
                         <TableHead>Paid By</TableHead>
+                        <TableHead>Payment</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -546,8 +611,19 @@ export function TripWorkspaceTabs({
                         <TableRow key={expense.id}>
                           <TableCell>{expense.title}</TableCell>
                           <TableCell>{expense.paidByName}</TableCell>
+                          <TableCell>{expense.paymentMode.replace("_", " ")}</TableCell>
                           <TableCell className="text-right">
                             {formatCurrency(expense.amountMinor, expense.currency)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="inline-flex gap-1">
+                              <Button size="icon-sm" variant="ghost" onClick={() => openExpenseModal(expense.id)}>
+                                <PencilSimpleIcon />
+                              </Button>
+                              <Button size="icon-sm" variant="ghost" onClick={() => removeExpense(expense.id)}>
+                                <TrashIcon />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -579,7 +655,16 @@ export function TripWorkspaceTabs({
                       <li key={settlement.id} className="rounded border p-3 text-sm">
                         <span className="font-semibold">{settlement.fromUserName}</span> pays{" "}
                         <span className="font-semibold">{settlement.toUserName}</span>{" "}
-                        <span className="font-semibold">{formatCurrency(settlement.amountMinor)}</span>
+                        <span className="font-semibold">{formatCurrency(settlement.amountMinor)}</span>{" "}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          type="button"
+                          onClick={() => settleItem(settlement.id)}
+                          disabled={isPending}
+                        >
+                          Settled
+                        </Button>
                       </li>
                     ))}
                   </ul>
@@ -617,6 +702,63 @@ export function TripWorkspaceTabs({
           places={visitedPlaces}
         />
       </TabsContent>
+
+      <Dialog open={isExpenseModalOpen} onOpenChange={setIsExpenseModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Expense</DialogTitle>
+            <DialogDescription>Update expense details.</DialogDescription>
+          </DialogHeader>
+          {selectedExpense && (
+            <div className="grid gap-3">
+              <div className="grid gap-2">
+                <Label>Title</Label>
+                <Input value={expenseTitle} onChange={(e) => setExpenseTitle(e.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label>Paid By</Label>
+                <Select value={expensePaidById} onValueChange={setExpensePaidById}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {participants.map((participant) => (
+                      <SelectItem key={participant.id} value={participant.id}>
+                        {participant.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Mode of Payment</Label>
+                <Select value={expensePaymentMode} onValueChange={(v) => setExpensePaymentMode(v as typeof expensePaymentMode)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CASH">Cash</SelectItem>
+                    <SelectItem value="CARD">Card</SelectItem>
+                    <SelectItem value="UPI">UPI</SelectItem>
+                    <SelectItem value="BANK_TRANSFER">Bank Transfer</SelectItem>
+                    <SelectItem value="WALLET">Wallet</SelectItem>
+                    <SelectItem value="OTHER">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Notes</Label>
+                <Textarea value={expenseNotes} onChange={(e) => setExpenseNotes(e.target.value)} />
+              </div>
+            </div>
+          )}
+          <DialogFooter showCloseButton>
+            <Button onClick={saveExpense} disabled={isPending || !expenseTitle.trim() || !expensePaidById}>
+              {isPending ? "Saving..." : "Save Expense"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Tabs>
   );
 }

@@ -3,7 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { computeSplit } from "@/lib/domain/split/compute-split";
-import { ComputeSplitSchema, CreateExpenseSchema } from "@/lib/validations/expense";
+import {
+  ComputeSplitSchema,
+  CreateExpenseSchema,
+  DeleteExpenseSchema,
+  SettleSettlementSchema,
+  UpdateExpenseSchema,
+} from "@/lib/validations/expense";
 import { generateSettlement } from "@/lib/domain/settlement/generate-settlement";
 
 export async function computeSplitAction(input: unknown) {
@@ -60,6 +66,7 @@ export async function createExpenseAction(input: unknown) {
           amountMinor: payload.amountMinor,
           currency: payload.currency ?? "INR",
           paidById: payload.paidById,
+          paymentMode: payload.paymentMode ?? "CASH",
           splitType: payload.splitType,
           splitDetails: payload.splitDetails,
           category: payload.category ?? "OTHER",
@@ -84,6 +91,61 @@ export async function createExpenseAction(input: unknown) {
     };
   }
 
+  revalidatePath(`/trips/${payload.tripId}`);
+  return { ok: true as const };
+}
+
+export async function updateExpenseAction(input: unknown) {
+  const parsed = UpdateExpenseSchema.safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: parsed.error.flatten() };
+  const payload = parsed.data;
+  try {
+    const result = await prisma.expense.updateMany({
+      where: { id: payload.expenseId, tripId: payload.tripId },
+      data: {
+        title: payload.title,
+        notes: payload.notes || null,
+        paidById: payload.paidById,
+        paymentMode: payload.paymentMode,
+      },
+    });
+    if (result.count === 0) throw new Error("Expense not found for this trip.");
+  } catch (error) {
+    return { ok: false as const, error: error instanceof Error ? error.message : "Failed to update expense." };
+  }
+  revalidatePath(`/trips/${payload.tripId}`);
+  return { ok: true as const };
+}
+
+export async function deleteExpenseAction(input: unknown) {
+  const parsed = DeleteExpenseSchema.safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: parsed.error.flatten() };
+  const payload = parsed.data;
+  try {
+    const result = await prisma.expense.deleteMany({
+      where: { id: payload.expenseId, tripId: payload.tripId },
+    });
+    if (result.count === 0) throw new Error("Expense not found for this trip.");
+  } catch (error) {
+    return { ok: false as const, error: error instanceof Error ? error.message : "Failed to delete expense." };
+  }
+  revalidatePath(`/trips/${payload.tripId}`);
+  return { ok: true as const };
+}
+
+export async function settleSettlementAction(input: unknown) {
+  const parsed = SettleSettlementSchema.safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: parsed.error.flatten() };
+  const payload = parsed.data;
+  try {
+    const result = await prisma.settlement.updateMany({
+      where: { id: payload.settlementId, tripId: payload.tripId, isSettled: false },
+      data: { isSettled: true, settledAt: new Date() },
+    });
+    if (result.count === 0) throw new Error("Settlement not found or already settled.");
+  } catch (error) {
+    return { ok: false as const, error: error instanceof Error ? error.message : "Failed to settle." };
+  }
   revalidatePath(`/trips/${payload.tripId}`);
   return { ok: true as const };
 }

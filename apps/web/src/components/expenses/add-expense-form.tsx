@@ -45,6 +45,7 @@ export function AddExpenseForm({
   const [paidById, setPaidById] = useState(
     defaultPaidById && users.some((user) => user.id === defaultPaidById) ? defaultPaidById : (users[0]?.id ?? ""),
   );
+  const [paymentMode, setPaymentMode] = useState<"CASH" | "CARD" | "UPI" | "BANK_TRANSFER" | "WALLET" | "OTHER">("CASH");
   const [splitType, setSplitType] = useState<SplitType>("EQUAL");
   const [participantIds, setParticipantIds] = useState<string[]>(users.map((user) => user.id));
   const [splitDetails, setSplitDetails] = useState<Record<string, number>>({});
@@ -98,6 +99,7 @@ export function AddExpenseForm({
         title,
         amountMinor,
         paidById,
+        paymentMode,
         participantIds,
         splitType,
         splitDetails,
@@ -114,6 +116,7 @@ export function AddExpenseForm({
       setSplitDetails({});
       setPreviewRows([]);
       setIsPreviewOpen(false);
+      setPaymentMode("CASH");
     });
   };
 
@@ -166,6 +169,22 @@ export function AddExpenseForm({
             <SelectItem value="EXACT_AMOUNT">Exact Amount</SelectItem>
             <SelectItem value="PERCENTAGE">Percentage</SelectItem>
             <SelectItem value="SHARES">Shares</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid gap-2">
+        <Label>Mode of Payment</Label>
+        <Select value={paymentMode} onValueChange={(value) => setPaymentMode(value as typeof paymentMode)}>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="CASH">Cash</SelectItem>
+            <SelectItem value="CARD">Card</SelectItem>
+            <SelectItem value="UPI">UPI</SelectItem>
+            <SelectItem value="BANK_TRANSFER">Bank Transfer</SelectItem>
+            <SelectItem value="WALLET">Wallet</SelectItem>
+            <SelectItem value="OTHER">Other</SelectItem>
           </SelectContent>
         </Select>
       </div>

@@ -141,7 +141,10 @@ export default async function TripPage({ params }: Props) {
         expenses={trip.expenses.map((expense) => ({
           id: expense.id,
           title: expense.title,
+          notes: expense.notes,
+          paidById: expense.paidById,
           paidByName: expense.paidBy.name,
+          paymentMode: expense.paymentMode,
           amountMinor: expense.amountMinor,
           currency: expense.currency,
         }))}
