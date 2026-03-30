@@ -19,17 +19,19 @@ import {
   getMostVisitedCategory,
   getTotalPlacesVisited,
 } from "@/lib/domain/visited-places/insights";
+import { placeCategoryLabel, type PlaceCategory } from "@/lib/places/place-categories";
 
 type PlaceView = {
   id: string;
   tripId: string;
   name: string;
-  category: "ATTRACTION" | "FOOD" | "STAY" | "SHOPPING" | "OTHER";
+  category: PlaceCategory;
   visitedAt: string;
   dayNumber: number | null;
   tags: string[];
   rating: number | null;
   notes: string | null;
+  locationUrl: string | null;
   visitors: Array<{ id: string; name: string; avatar: string | null }>;
   ratings: Array<{ userId: string; userName: string; rating: number }>;
   media: Array<{ id: string; url: string; type: "IMAGE" | "VIDEO" }>;
@@ -146,7 +148,10 @@ export function VisitedPlacesPanel({
         <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded border p-3 text-sm">Total places: <b>{insights.total}</b></div>
           <div className="rounded border p-3 text-sm">Favorite: <b>{insights.favorite?.name ?? "-"}</b></div>
-          <div className="rounded border p-3 text-sm">Top category: <b>{insights.topCategory?.category ?? "-"}</b></div>
+          <div className="rounded border p-3 text-sm">
+            Top category:{" "}
+            <b>{insights.topCategory ? placeCategoryLabel(insights.topCategory.category) : "-"}</b>
+          </div>
           <div className="rounded border p-3 text-sm">Avg rating: <b>{insights.average ?? "-"}</b></div>
         </CardContent>
       </Card>
@@ -225,6 +230,7 @@ export function VisitedPlacesPanel({
               rating: place.rating,
               mediaUrl: place.media[0]?.url ?? null,
               notes: place.notes,
+              locationUrl: place.locationUrl,
               visitors: place.visitors,
               ratings: place.ratings,
             }))}

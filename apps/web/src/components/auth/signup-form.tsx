@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { toast } from "sonner";
 import { registerUserAction } from "@/lib/actions/auth";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -30,28 +29,51 @@ export function SignupForm({ inviteToken, nextPath }: { inviteToken?: string; ne
   };
 
   return (
-    <Card className="w-full max-w-xl">
-      <CardHeader>
-        <CardTitle>Sign Up</CardTitle>
-        <CardDescription>Create your account to join trips.</CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-3">
+    <div className="w-full max-w-xl mx-auto bg-white/90 backdrop-blur-xl rounded-[3rem] p-8 sm:p-10 shadow-[0_12px_40px_rgba(0,0,0,0.15)] border-[6px] border-white relative overflow-hidden">
+      <div className="absolute top-0 left-1/4 right-1/4 h-6 rounded-b-[2rem] bg-gradient-to-b from-white to-transparent opacity-60 pointer-events-none" />
+      
+      <div className="mb-8 text-center relative z-10">
+        <h2 className="text-4xl font-black uppercase text-[#393E46] tracking-tighter drop-shadow-md">Sign Up</h2>
+        <p className="text-[#00ADB5] font-black mt-2 uppercase text-sm tracking-widest bg-[#CBF1F5] inline-block px-4 py-1 rounded-full border-2 border-white shadow-sm">Create your account</p>
+      </div>
+
+      <div className="grid gap-5 relative z-10">
         <div className="grid gap-2">
-          <Label>Name</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} />
+          <Label className="font-black text-xs uppercase tracking-widest text-[#71C9CE] ml-4 drop-shadow-sm">Name</Label>
+          <Input 
+            value={name} 
+            onChange={(e) => setName(e.target.value)} 
+            placeholder="Awesome Traveler"
+            className="h-16 rounded-full px-6 bg-[#EEEEEE] border-[3px] border-white shadow-inner focus-visible:ring-4 focus-visible:ring-[#00ADB5]/30 focus-visible:border-[#00ADB5] text-[#393E46] font-bold text-lg placeholder:text-slate-400"
+          />
         </div>
         <div className="grid gap-2">
-          <Label>Email</Label>
-          <Input value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Label className="font-black text-xs uppercase tracking-widest text-[#71C9CE] ml-4 drop-shadow-sm">Email</Label>
+          <Input 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="player@example.com" 
+            className="h-16 rounded-full px-6 bg-[#EEEEEE] border-[3px] border-white shadow-inner focus-visible:ring-4 focus-visible:ring-[#00ADB5]/30 focus-visible:border-[#00ADB5] text-[#393E46] font-bold text-lg placeholder:text-slate-400"
+          />
         </div>
         <div className="grid gap-2">
-          <Label>Password</Label>
-          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <Label className="font-black text-xs uppercase tracking-widest text-[#71C9CE] ml-4 drop-shadow-sm">Password</Label>
+          <Input 
+            type="password" 
+            value={password} 
+            onChange={(e) => setPassword(e.target.value)} 
+            placeholder="••••••••"
+            className="h-16 rounded-full px-6 bg-[#EEEEEE] border-[3px] border-white shadow-inner focus-visible:ring-4 focus-visible:ring-[#00ADB5]/30 focus-visible:border-[#00ADB5] text-[#393E46] font-bold text-lg placeholder:text-slate-400"
+          />
         </div>
-        <Button onClick={onSubmit} disabled={isPending || !name || !email || !password}>
+        <Button 
+          onClick={onSubmit} 
+          disabled={isPending || !name || !email || !password}
+          className="mt-4 w-full h-16 rounded-full bg-[#00ADB5] hover:bg-[#009299] text-white font-black text-xl uppercase tracking-widest border-b-[6px] border-[#393E46] active:border-b-0 active:translate-y-[6px] transition-all shadow-[0_6px_15px_rgba(0,173,181,0.4)] disabled:opacity-50 disabled:translate-y-[6px] disabled:border-b-0"
+        >
           {isPending ? "Creating..." : "Create account"}
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

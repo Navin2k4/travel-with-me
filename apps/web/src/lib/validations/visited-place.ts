@@ -1,7 +1,24 @@
 import { z } from "zod";
+import { PlaceCategorySchema } from "@/lib/places/place-categories";
 
-export const PlaceCategorySchema = z.enum(["ATTRACTION", "FOOD", "STAY", "SHOPPING", "OTHER"]);
+export { PlaceCategorySchema };
 export const MediaTypeSchema = z.enum(["IMAGE", "VIDEO"]);
+
+const createOptionalLocationUrl = z.preprocess((val) => {
+  if (val === undefined || val === null) return undefined;
+  if (typeof val !== "string") return val;
+  const t = val.trim();
+  return t === "" ? undefined : t;
+}, z.string().url({ message: "Use a valid link (https://...)" }).max(2048).optional());
+
+const updateOptionalLocationUrl = z.preprocess((val) => {
+  if (val === undefined) return undefined;
+  if (val === null) return null;
+  if (typeof val !== "string") return val;
+  const t = val.trim();
+  if (t === "") return null;
+  return t;
+}, z.union([z.string().url({ message: "Use a valid link (https://...)" }).max(2048), z.null()]).optional());
 
 export const CreateVisitedPlaceSchema = z.object({
   tripId: z.string().min(1),
@@ -10,6 +27,7 @@ export const CreateVisitedPlaceSchema = z.object({
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   address: z.string().trim().max(500).optional(),
+  locationUrl: createOptionalLocationUrl,
   visitedAt: z.coerce.date().optional(),
   dayNumber: z.number().int().positive().optional(),
   notes: z.string().trim().max(4000).optional(),
@@ -29,6 +47,7 @@ export const UpdateVisitedPlaceSchema = z.object({
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
   address: z.string().trim().max(500).nullable().optional(),
+  locationUrl: updateOptionalLocationUrl,
   visitedAt: z.coerce.date().optional(),
   dayNumber: z.number().int().positive().nullable().optional(),
   notes: z.string().trim().max(4000).nullable().optional(),

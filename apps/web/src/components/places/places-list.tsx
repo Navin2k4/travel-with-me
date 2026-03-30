@@ -1,7 +1,6 @@
 "use client";
 
 import { PlaceCard } from "@/components/places/place-card";
-
 type Place = {
   id: string;
   tripId: string;
@@ -13,6 +12,7 @@ type Place = {
   rating: number | null;
   mediaUrl: string | null;
   notes: string | null;
+  locationUrl: string | null;
   visitors: Array<{ id: string; name: string; avatar: string | null }>;
   ratings: Array<{ userId: string; userName: string; rating: number }>;
 };

@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { DEFAULT_IMAGE_PLACEHOLDER_URL } from "@/lib/constants";
 import { Card } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
+import { decimalAmountToNumber } from "@/lib/money";
 
 type Props = {
   params: Promise<{ tripId: string }>;
@@ -43,13 +44,18 @@ export default async function TripPage({ params }: Props) {
         orderBy: { joinedAt: "asc" },
       },
       expenses: {
-        include: { paidBy: true },
+        include: {
+          paidBy: true,
+          splits: {
+            include: { user: true },
+            orderBy: { createdAt: "asc" },
+          },
+        },
         orderBy: { createdAt: "desc" },
       },
       settlements: {
-        where: { isSettled: false },
         include: { fromUser: true, toUser: true },
-        orderBy: { amountMinor: "desc" },
+        orderBy: { amount: "desc" },
       },
       visitedPlaces: {
         include: {
@@ -74,6 +80,14 @@ export default async function TripPage({ params }: Props) {
   if (!trip) {
     return <main className="p-4">Trip not found.</main>;
   }
+
+  const tripCustomExpenseCategories = Array.from(
+    new Set(
+      trip.expenses
+        .map((expense) => expense.customCategory?.trim() ?? "")
+        .filter((value) => value.length > 0),
+    ),
+  );
 
   return (
     <main className="mx-auto grid w-full max-w-6xl  p-4">
@@ -129,6 +143,7 @@ export default async function TripPage({ params }: Props) {
           })),
         }}
         currentUserId={currentUser?.id}
+        customExpenseCategories={tripCustomExpenseCategories}
         participants={trip.participants.map((participant) => ({
           id: participant.user.id,
           name: participant.user.name,
@@ -144,15 +159,28 @@ export default async function TripPage({ params }: Props) {
           notes: expense.notes,
           paidById: expense.paidById,
           paidByName: expense.paidBy.name,
+          splitType: expense.splitType,
+          category: expense.category,
+          customCategory: expense.customCategory,
           paymentMode: expense.paymentMode,
-          amountMinor: expense.amountMinor,
+          amount: decimalAmountToNumber(expense.amount),
           currency: expense.currency,
+          splits: expense.splits.map((split) => ({
+            userName: split.user.name,
+            amount: decimalAmountToNumber(split.amount),
+            percentageBp: split.percentageBp,
+            shares: split.shares,
+          })),
         }))}
         settlements={trip.settlements.map((settlement) => ({
           id: settlement.id,
+          fromUserId: settlement.fromUserId,
+          toUserId: settlement.toUserId,
           fromUserName: settlement.fromUser.name,
           toUserName: settlement.toUser.name,
-          amountMinor: settlement.amountMinor,
+          amount: decimalAmountToNumber(settlement.amount),
+          isSettled: settlement.isSettled,
+          settledAt: settlement.settledAt ? settlement.settledAt.toISOString() : null,
         }))}
         visitedPlaces={trip.visitedPlaces.map((place) => ({
           id: place.id,
@@ -164,6 +192,7 @@ export default async function TripPage({ params }: Props) {
           tags: place.tags,
           rating: place.rating,
           notes: place.notes,
+          locationUrl: place.locationUrl,
           visitors: place.visitors.map((visitor) => ({
             id: visitor.user.id,
             name: visitor.user.name,

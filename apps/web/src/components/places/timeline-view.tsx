@@ -1,5 +1,7 @@
 "use client";
 
+import { formatPlaceVisitedClock } from "@/lib/visit-datetime";
+
 type TimelinePlace = {
   id: string;
   name: string;
@@ -24,7 +26,7 @@ export function TimelineView({ places }: { places: TimelinePlace[] }) {
               .sort((a, b) => +new Date(a.visitedAt) - +new Date(b.visitedAt))
               .map((item) => (
                 <li key={item.id} className="text-sm">
-                  {new Date(item.visitedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} {"->"}{" "}
+                  {formatPlaceVisitedClock(item.visitedAt)} {"->"}{" "}
                   {item.name}
                 </li>
               ))}

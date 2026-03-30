@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { NotePencilIcon, StarIcon, TrashIcon } from "@phosphor-icons/react";
+import { useEffect, useState, useTransition } from "react";
+import { LinkSimpleIcon, NotePencilIcon, StarIcon, TrashIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,7 +25,16 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { DEFAULT_IMAGE_PLACEHOLDER_URL, DEFAULT_USER_AVATAR_URL } from "@/lib/constants";
-import { updateVisitedPlaceAction } from "@/lib/actions/visited-places";
+import { addMediaToPlaceAction, updateVisitedPlaceAction } from "@/lib/actions/visited-places";
+import { normalizeHttpUrl } from "@/lib/normalize-http-url";
+import { UploadButton } from "@/lib/uploadthing";
+import { dateTimeLocalValueToIso, formatDateTimeLocalInput } from "@/lib/visit-datetime";
+import {
+  PLACE_CATEGORY_OPTIONS,
+  asPlaceCategory,
+  placeCategoryLabel,
+  type PlaceCategory,
+} from "@/lib/places/place-categories";
 
 type PlaceCardProps = {
   place: {
@@ -41,6 +50,7 @@ type PlaceCardProps = {
     notes: string | null;
     dayNumber: number | null;
     tripId: string;
+    locationUrl: string | null;
   };
   onDelete: (visitedPlaceId: string) => void;
   onRate: (visitedPlaceId: string, rating: number) => void;
@@ -50,17 +60,31 @@ type PlaceCardProps = {
 export function PlaceCard({ place, onDelete, onRate, currentUserId }: PlaceCardProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(place.name);
-  const [category, setCategory] = useState(place.category);
-  const [visitedAt, setVisitedAt] = useState(new Date(place.visitedAt).toISOString().slice(0, 16));
+  const [category, setCategory] = useState<PlaceCategory>(() => asPlaceCategory(place.category));
+  const [visitedAt, setVisitedAt] = useState(() => formatDateTimeLocalInput(new Date(place.visitedAt)));
   const [notes, setNotes] = useState(place.notes ?? "");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>(place.tags);
   const [dayNumber, setDayNumber] = useState(place.dayNumber ? String(place.dayNumber) : "");
+  const [locationUrl, setLocationUrl] = useState(place.locationUrl ?? "");
+  const [newImageUrl, setNewImageUrl] = useState("");
   const currentUserRating = currentUserId
     ? place.ratings.find((item) => item.userId === currentUserId)?.rating
     : undefined;
   const [ratingInput, setRatingInput] = useState<string>(String(currentUserRating ?? 5));
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!open) return;
+    setName(place.name);
+    setCategory(asPlaceCategory(place.category));
+    setVisitedAt(formatDateTimeLocalInput(new Date(place.visitedAt)));
+    setNotes(place.notes ?? "");
+    setTags(place.tags);
+    setDayNumber(place.dayNumber ? String(place.dayNumber) : "");
+    setLocationUrl(place.locationUrl ?? "");
+    setNewImageUrl("");
+  }, [open, place]);
 
   const addTag = () => {
     const value = tagInput.trim();
@@ -70,16 +94,22 @@ export function PlaceCard({ place, onDelete, onRate, currentUserId }: PlaceCardP
   };
 
   const saveEdit = () => {
+    const visitedAtIso = dateTimeLocalValueToIso(visitedAt);
+    if (!visitedAtIso) {
+      toast.error("Invalid visit date or time.");
+      return;
+    }
     startTransition(async () => {
       const result = await updateVisitedPlaceAction({
         tripId: place.tripId,
         visitedPlaceId: place.id,
         name,
         category,
-        visitedAt,
+        visitedAt: visitedAtIso,
         notes: notes || null,
         tags,
         dayNumber: dayNumber ? Number(dayNumber) : null,
+        locationUrl: locationUrl.trim() ? locationUrl.trim() : null,
       });
       if (!result.ok) {
         toast.error(typeof result.error === "string" ? result.error : "Failed to update place.");
@@ -87,6 +117,28 @@ export function PlaceCard({ place, onDelete, onRate, currentUserId }: PlaceCardP
       }
       toast.success("Place updated.");
       setOpen(false);
+    });
+  };
+
+  const addPhotoFromUrl = () => {
+    const normalized = normalizeHttpUrl(newImageUrl);
+    if (!normalized) {
+      toast.error("Enter a valid http(s) image URL.");
+      return;
+    }
+    startTransition(async () => {
+      const result = await addMediaToPlaceAction({
+        tripId: place.tripId,
+        visitedPlaceId: place.id,
+        url: normalized,
+        type: "IMAGE",
+      });
+      if (!result.ok) {
+        toast.error(typeof result.error === "string" ? result.error : "Failed to add image.");
+        return;
+      }
+      toast.success("Image added.");
+      setNewImageUrl("");
     });
   };
 
@@ -107,6 +159,19 @@ export function PlaceCard({ place, onDelete, onRate, currentUserId }: PlaceCardP
                 {place.rating}/5
               </Badge>
             )}
+            {place.locationUrl ? (
+              <Button variant="secondary" size="icon-sm" className="h-7 w-7" asChild>
+                <a
+                  href={place.locationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open location link"
+                  title="Open location link"
+                >
+                  <LinkSimpleIcon className="h-4 w-4" />
+                </a>
+              </Button>
+            ) : null}
             <Button
               variant="secondary"
               size="icon-sm"
@@ -159,7 +224,7 @@ export function PlaceCard({ place, onDelete, onRate, currentUserId }: PlaceCardP
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">{place.category}</Badge>
+          <Badge variant="secondary">{placeCategoryLabel(place.category)}</Badge>
         </div>
         {currentUserId && (
           <div className="flex items-center gap-2">
@@ -198,16 +263,16 @@ export function PlaceCard({ place, onDelete, onRate, currentUserId }: PlaceCardP
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label>Category</Label>
-                <Select value={category} onValueChange={(v) => setCategory(v as typeof category)}>
+                <Select value={category} onValueChange={(v) => setCategory(v as PlaceCategory)}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ATTRACTION">Attraction</SelectItem>
-                    <SelectItem value="FOOD">Food</SelectItem>
-                    <SelectItem value="STAY">Stay</SelectItem>
-                    <SelectItem value="SHOPPING">Shopping</SelectItem>
-                    <SelectItem value="OTHER">Other</SelectItem>
+                    {PLACE_CATEGORY_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -221,8 +286,76 @@ export function PlaceCard({ place, onDelete, onRate, currentUserId }: PlaceCardP
               <Input type="datetime-local" value={visitedAt} onChange={(e) => setVisitedAt(e.target.value)} />
             </div>
             <div className="grid gap-2">
+              <Label htmlFor={`place-url-${place.id}`}>Location link (optional)</Label>
+              <Input
+                id={`place-url-${place.id}`}
+                type="url"
+                inputMode="url"
+                value={locationUrl}
+                onChange={(e) => setLocationUrl(e.target.value)}
+                placeholder="https://..."
+              />
+            </div>
+            <div className="grid gap-2">
               <Label>Notes</Label>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label>Add photos</Label>
+              <p className="text-xs text-muted-foreground">Upload a file or paste a direct image URL — saves immediately.</p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Input
+                  type="url"
+                  inputMode="url"
+                  className="flex-1"
+                  value={newImageUrl}
+                  onChange={(e) => setNewImageUrl(e.target.value)}
+                  placeholder="https://…"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addPhotoFromUrl();
+                    }
+                  }}
+                />
+                <Button type="button" variant="outline" className="shrink-0" onClick={addPhotoFromUrl} disabled={isPending}>
+                  Add from URL
+                </Button>
+              </div>
+              <UploadButton
+                endpoint="placeImageUploader"
+                appearance={{
+                  button:
+                    "h-9 w-full rounded-none border border-border bg-background px-3 text-xs font-medium hover:bg-muted ut-uploading:cursor-not-allowed ut-uploading:opacity-70 sm:w-auto",
+                  allowedContent: "text-xs text-muted-foreground",
+                }}
+                content={{
+                  button: () => "Upload image",
+                  allowedContent: () => "PNG, JPG, WEBP",
+                }}
+                onClientUploadComplete={(files) => {
+                  const urls = (files ?? []).map((f) => f.ufsUrl).filter(Boolean);
+                  if (urls.length === 0) return;
+                  startTransition(async () => {
+                    for (const url of urls) {
+                      const result = await addMediaToPlaceAction({
+                        tripId: place.tripId,
+                        visitedPlaceId: place.id,
+                        url,
+                        type: "IMAGE",
+                      });
+                      if (!result.ok) {
+                        toast.error(typeof result.error === "string" ? result.error : "Failed to add image.");
+                        return;
+                      }
+                    }
+                    toast.success(urls.length > 1 ? `Added ${urls.length} images.` : "Image added.");
+                  });
+                }}
+                onUploadError={(error: Error) => {
+                  toast.error(error.message);
+                }}
+              />
             </div>
             <div className="grid gap-2">
               <Label>Tags</Label>

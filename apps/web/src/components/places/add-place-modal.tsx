@@ -25,6 +25,9 @@ import {
 } from "@/components/ui/select";
 import { createVisitedPlaceAction } from "@/lib/actions/visited-places";
 import { addMediaToPlaceAction } from "@/lib/actions/visited-places";
+import { normalizeHttpUrl } from "@/lib/normalize-http-url";
+import { PLACE_CATEGORY_OPTIONS, type PlaceCategory } from "@/lib/places/place-categories";
+import { visitScheduleToVisitedAtIso } from "@/lib/visit-datetime";
 import { UploadButton } from "@/lib/uploadthing";
 
 type Participant = { id: string; name: string };
@@ -43,7 +46,7 @@ export function AddPlaceModal({
 }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<"ATTRACTION" | "FOOD" | "STAY" | "SHOPPING" | "OTHER">("OTHER");
+  const [category, setCategory] = useState<PlaceCategory>("OTHER");
   const [visitedDate, setVisitedDate] = useState("");
   const [fromTime, setFromTime] = useState("");
   const [toTime, setToTime] = useState("");
@@ -53,10 +56,21 @@ export function AddPlaceModal({
   const [tags, setTags] = useState<string[]>([]);
   const [visitorIds, setVisitorIds] = useState<string[]>(participants.map((user) => user.id));
   const [expenseIds, setExpenseIds] = useState<string[]>([]);
-  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
+  const [expenseSearch, setExpenseSearch] = useState("");
+  const [locationUrl, setLocationUrl] = useState("");
+  const [placeImageUrls, setPlaceImageUrls] = useState<string[]>([]);
+  const [imageUrlDraft, setImageUrlDraft] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const canSubmit = useMemo(() => name.trim().length > 0, [name]);
+
+  const filteredExpenses = useMemo(() => {
+    const q = expenseSearch.trim().toLowerCase();
+    if (q.length === 0) return [];
+    return expenses
+      .filter((expense) => !expenseIds.includes(expense.id) && expense.title.toLowerCase().includes(q))
+      .slice(0, 12);
+  }, [expenses, expenseSearch, expenseIds]);
 
   const addTag = () => {
     const t = tagInput.trim();
@@ -69,25 +83,45 @@ export function AddPlaceModal({
     setter((current) => (current.includes(id) ? current.filter((v) => v !== id) : [...current, id]));
   };
 
+  const linkExpense = (expenseId: string) => {
+    setExpenseIds((current) => (current.includes(expenseId) ? current : [...current, expenseId]));
+    setExpenseSearch("");
+  };
+
+  const unlinkExpense = (expenseId: string) => {
+    setExpenseIds((current) => current.filter((id) => id !== expenseId));
+  };
+
+  const appendImageFromUrlInput = () => {
+    const normalized = normalizeHttpUrl(imageUrlDraft);
+    if (!normalized) {
+      toast.error("Enter a valid http(s) image URL.");
+      return;
+    }
+    setPlaceImageUrls((current) => (current.includes(normalized) ? current : [...current, normalized]));
+    setImageUrlDraft("");
+    toast.success("Image URL added.");
+  };
+
+  const removePlaceImage = (url: string) => {
+    setPlaceImageUrls((current) => current.filter((u) => u !== url));
+  };
+
   const submit = () => {
     startTransition(async () => {
-      const visitedAt = visitedDate && fromTime ? `${visitedDate}T${fromTime}` : "";
-      const durationNote =
-        visitedDate && (fromTime || toTime)
-          ? `Time: ${visitedDate} ${fromTime || "--:--"} to ${toTime || "--:--"}`
-          : "";
-      const mergedNotes = [notes.trim(), durationNote].filter(Boolean).join("\n");
+      const visitedAtIso = visitScheduleToVisitedAtIso(visitedDate, fromTime, toTime);
 
       const result = await createVisitedPlaceAction({
         tripId,
         addedById,
         name,
         category,
-        visitedAt: visitedAt || undefined,
-        notes: mergedNotes || undefined,
+        visitedAt: visitedAtIso || undefined,
+        notes: notes.trim() || undefined,
         tags,
         visitorIds,
         expenseIds,
+        locationUrl: locationUrl.trim() || undefined,
         rating: rating ? Number(rating) : undefined,
       });
       if (!result.ok) {
@@ -95,8 +129,8 @@ export function AddPlaceModal({
         return;
       }
 
-      if (uploadedImageUrls.length > 0) {
-        for (const url of uploadedImageUrls) {
+      if (placeImageUrls.length > 0) {
+        for (const url of placeImageUrls) {
           await addMediaToPlaceAction({
             tripId,
             visitedPlaceId: result.data.id,
@@ -118,7 +152,10 @@ export function AddPlaceModal({
       setTagInput("");
       setVisitorIds(participants.map((user) => user.id));
       setExpenseIds([]);
-      setUploadedImageUrls([]);
+      setExpenseSearch("");
+      setLocationUrl("");
+      setPlaceImageUrls([]);
+      setImageUrlDraft("");
       setOpen(false);
     });
   };
@@ -130,6 +167,7 @@ export function AddPlaceModal({
         setOpen(nextOpen);
         if (nextOpen) {
           setVisitorIds(participants.map((user) => user.id));
+          setExpenseSearch("");
         }
       }}
     >
@@ -150,21 +188,24 @@ export function AddPlaceModal({
             </div>
             <div className="grid gap-2">
               <Label>Category</Label>
-              <Select value={category} onValueChange={(v) => setCategory(v as typeof category)}>
+              <Select value={category} onValueChange={(v) => setCategory(v as PlaceCategory)}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ATTRACTION">Attraction</SelectItem>
-                  <SelectItem value="FOOD">Food</SelectItem>
-                  <SelectItem value="STAY">Stay</SelectItem>
-                  <SelectItem value="SHOPPING">Shopping</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
+                  {PLACE_CATEGORY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Visit Schedule (Date-From-To)</Label>
+              <Label>Visit schedule</Label>
+              <p className="text-xs text-muted-foreground">
+                Date and <span className="font-medium text-foreground">From</span> time set the visit time on the place. <span className="font-medium text-foreground">To</span> is optional (not saved as a second timestamp); put ranges in Notes if you want them kept.
+              </p>
               <div className="grid  sm:grid-cols-3">
                 <Input type="date" value={visitedDate} onChange={(e) => setVisitedDate(e.target.value)} />
                 <div className="grid gap-1">
@@ -178,6 +219,18 @@ export function AddPlaceModal({
             <div className="grid gap-2">
               <Label>Rating (1-5)</Label>
               <Input type="number" min="1" max="5" value={rating} onChange={(e) => setRating(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="place-location-url">Location link (optional)</Label>
+              <Input
+                id="place-location-url"
+                type="url"
+                inputMode="url"
+                value={locationUrl}
+                onChange={(e) => setLocationUrl(e.target.value)}
+                placeholder="https://maps.google.com/..."
+              />
+              <p className="text-xs text-muted-foreground">Maps, website, or any https link for this place.</p>
             </div>
             <div className="grid gap-2">
               <Label>Notes</Label>
@@ -203,15 +256,14 @@ export function AddPlaceModal({
 
           <div className="grid gap-3">
             <div className="grid gap-2">
-              <Label>Place Images (optional)</Label>
+              <Label>Place images (optional)</Label>
+              <p className="text-xs text-muted-foreground">
+                Upload from your device or paste a direct image URL (<code className="text-[11px]">https://</code>).
+              </p>
               <div className="relative overflow-hidden rounded-lg border bg-muted/30">
-                {uploadedImageUrls.length > 0 ? (
+                {placeImageUrls.length > 0 ? (
                   <>
-                    <img
-                      src={uploadedImageUrls[0]}
-                      alt="Place upload preview"
-                      className="h-44 w-full object-cover"
-                    />
+                    <img src={placeImageUrls[0]} alt="Place preview" className="h-44 w-full object-cover" />
                     <div className="absolute bottom-3 right-3">
                       <UploadButton
                         endpoint="placeImageUploader"
@@ -221,13 +273,13 @@ export function AddPlaceModal({
                           allowedContent: "hidden",
                         }}
                         content={{
-                          button: () => "Update Images",
+                          button: () => "Add upload",
                         }}
                         onClientUploadComplete={(files) => {
                           const urls = (files ?? []).map((f) => f.ufsUrl);
                           if (urls.length === 0) return;
-                          setUploadedImageUrls((current) => [...new Set([...current, ...urls])]);
-                          toast.success("Place image(s) uploaded.");
+                          setPlaceImageUrls((current) => [...new Set([...current, ...urls])]);
+                          toast.success("Image(s) uploaded.");
                         }}
                         onUploadError={(error: Error) => {
                           toast.error(error.message);
@@ -245,14 +297,14 @@ export function AddPlaceModal({
                         allowedContent: "text-xs text-muted-foreground",
                       }}
                       content={{
-                        button: () => "Upload Images",
+                        button: () => "Upload images",
                         allowedContent: () => "PNG, JPG, WEBP up to 4MB each",
                       }}
                       onClientUploadComplete={(files) => {
                         const urls = (files ?? []).map((f) => f.ufsUrl);
                         if (urls.length === 0) return;
-                        setUploadedImageUrls((current) => [...new Set([...current, ...urls])]);
-                        toast.success("Place image(s) uploaded.");
+                        setPlaceImageUrls((current) => [...new Set([...current, ...urls])]);
+                        toast.success("Image(s) uploaded.");
                       }}
                       onUploadError={(error: Error) => {
                         toast.error(error.message);
@@ -261,6 +313,45 @@ export function AddPlaceModal({
                   </div>
                 )}
               </div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Input
+                  id="place-image-url"
+                  type="url"
+                  inputMode="url"
+                  className="flex-1"
+                  value={imageUrlDraft}
+                  onChange={(e) => setImageUrlDraft(e.target.value)}
+                  placeholder="https://example.com/photo.jpg"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      appendImageFromUrlInput();
+                    }
+                  }}
+                />
+                <Button type="button" variant="outline" className="shrink-0" onClick={appendImageFromUrlInput}>
+                  Add URL
+                </Button>
+              </div>
+              {placeImageUrls.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {placeImageUrls.map((url) => (
+                    <Badge key={url} variant="secondary" className="max-w-full gap-1 py-1 pr-1 font-normal">
+                      <span className="max-w-[min(280px,55vw)] truncate" title={url}>
+                        {url.length > 48 ? `${url.slice(0, 48)}…` : url}
+                      </span>
+                      <button
+                        type="button"
+                        className="rounded-sm px-0.5 hover:bg-muted"
+                        aria-label="Remove image"
+                        onClick={() => removePlaceImage(url)}
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              ) : null}
             </div>
             <div className="grid gap-2">
               <Label>Participants</Label>
@@ -278,19 +369,58 @@ export function AddPlaceModal({
               </div>
             </div>
             <div className="grid gap-2">
-              <Label>Link expenses (optional)</Label>
-              <div className="flex flex-wrap gap-2">
-                {expenses.map((expense) => (
-                  <Button
-                    key={expense.id}
-                    type="button"
-                    variant={expenseIds.includes(expense.id) ? "default" : "outline"}
-                    onClick={() => toggleId(expense.id, setExpenseIds)}
-                  >
-                    {expense.title}
-                  </Button>
-                ))}
-              </div>
+              <Label htmlFor="place-expense-search">Link expenses (optional)</Label>
+              <Input
+                id="place-expense-search"
+                value={expenseSearch}
+                onChange={(e) => setExpenseSearch(e.target.value)}
+                placeholder="Search trip expenses by title…"
+                autoComplete="off"
+              />
+              {expenseSearch.trim().length > 0 && filteredExpenses.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No matching expenses. Try another search.</p>
+              ) : null}
+              {filteredExpenses.length > 0 ? (
+                <div
+                  className="max-h-36 overflow-y-auto rounded-md border bg-popover text-sm shadow-sm"
+                  aria-label="Matching expenses"
+                >
+                  {filteredExpenses.map((expense) => (
+                    <button
+                      key={expense.id}
+                      type="button"
+                      className="flex w-full border-b px-3 py-2 text-left last:border-b-0 hover:bg-accent"
+                      onClick={() => linkExpense(expense.id)}
+                    >
+                      {expense.title}
+                    </button>
+                  ))}
+                </div>
+              ) : expenseSearch.trim().length === 0 && expenses.length > 0 ? (
+                <p className="text-xs text-muted-foreground">Search to find and link expenses — they are not all listed at once.</p>
+              ) : expenses.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Add trip expenses first to link them here.</p>
+              ) : null}
+              {expenseIds.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {expenseIds.map((id) => {
+                    const linked = expenses.find((e) => e.id === id);
+                    return (
+                      <Badge key={id} variant="secondary" className="gap-1 pr-1 font-normal">
+                        <span className="max-w-[200px] truncate">{linked?.title ?? "Expense"}</span>
+                        <button
+                          type="button"
+                          className="rounded-sm px-0.5 hover:bg-muted"
+                          aria-label={`Remove ${linked?.title ?? "expense"}`}
+                          onClick={() => unlinkExpense(id)}
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    );
+                  })}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

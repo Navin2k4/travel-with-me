@@ -18,7 +18,18 @@ enum SplitType {
 enum ExpenseCategory {
   FOOD
   TRANSPORT
+  FUEL
+  TOLL_PARKING
   LODGING
+  FLIGHT
+  TRAIN_BUS
+  LOCAL_TRAVEL
+  VISA
+  INSURANCE
+  ACTIVITY_TICKETS
+  GUIDE_TIPS
+  MEDICAL
+  COMMUNICATION
   ENTERTAINMENT
   SHOPPING
   UTILITIES
@@ -50,10 +61,16 @@ enum ParticipantPresetTag {
 }
 
 enum PlaceCategory {
+  TRANSPORT
   ATTRACTION
   FOOD
   STAY
   SHOPPING
+  NATURE
+  NIGHTLIFE
+  CULTURE
+  ENTERTAINMENT
+  WELLNESS
   OTHER
 }
 
@@ -192,13 +209,15 @@ model Expense {
   tripId        String
   title         String
   notes         String?
-  amountMinor   Int
+  /// Total in major currency units (e.g. INR rupees), not paise.
+  amount        Decimal            @db.Decimal(14, 2)
   currency      String            @default("INR")
   paidById      String
   paymentMode   PaymentMode        @default(CASH)
   splitType     SplitType
   splitDetails  Json?
   category      ExpenseCategory   @default(OTHER)
+  customCategory String?
   recurrenceRule RecurrenceRule   @default(NONE)
   recurrenceMeta Json?
   occurredAt    DateTime          @default(now())
@@ -219,7 +238,8 @@ model ExpenseSplit {
   id            String            @id @default(cuid())
   expenseId     String
   userId        String
-  amountMinor   Int
+  /// Owed share in major currency units (matches Expense.amount).
+  amount        Decimal           @db.Decimal(14, 2)
   percentageBp  Int?
   shares        Int?
   createdAt     DateTime          @default(now())
@@ -229,7 +249,7 @@ model ExpenseSplit {
 
   @@unique([expenseId, userId])
   @@index([userId, createdAt])
-  @@index([expenseId, amountMinor])
+  @@index([expenseId, amount])
 }
 
 model Settlement {
@@ -237,7 +257,7 @@ model Settlement {
   tripId        String
   fromUserId    String
   toUserId      String
-  amountMinor   Int
+  amount        Decimal           @db.Decimal(14, 2)
   algorithmVer  String            @default("v1")
   isSettled     Boolean           @default(false)
   settledAt     DateTime?
@@ -307,6 +327,7 @@ model VisitedPlace {
   latitude        Float?
   longitude       Float?
   address         String?
+  locationUrl     String?
   visitedAt       DateTime
   dayNumber       Int?
   notes           String?

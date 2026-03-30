@@ -1,7 +1,9 @@
+import type { PlaceCategory } from "@/lib/places/place-categories";
+
 type PlaceInsightInput = {
   id: string;
   name: string;
-  category: "ATTRACTION" | "FOOD" | "STAY" | "SHOPPING" | "OTHER";
+  category: PlaceCategory;
   rating: number | null;
 };
 

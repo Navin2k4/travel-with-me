@@ -20,8 +20,9 @@ export function generateSettlement(ledger: Ledger[]): SettlementInstruction[] {
     if (net < 0) debtors.push({ userId: row.userId, amount: -net });
   }
 
-  creditors.sort((a, b) => b.amount - a.amount);
-  debtors.sort((a, b) => b.amount - a.amount);
+  // Deterministic ordering keeps output stable for the same ledger.
+  creditors.sort((a, b) => b.amount - a.amount || a.userId.localeCompare(b.userId));
+  debtors.sort((a, b) => b.amount - a.amount || a.userId.localeCompare(b.userId));
 
   const instructions: SettlementInstruction[] = [];
   let d = 0;
