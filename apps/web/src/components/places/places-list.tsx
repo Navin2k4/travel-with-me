@@ -33,7 +33,7 @@ export function PlacesList({
   }
 
   return (
-    <div className="grid gap-3 md:grid-cols-2">
+    <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
       {places.map((place) => (
         <PlaceCard key={place.id} place={place} onDelete={onDelete} onRate={onRate} currentUserId={currentUserId} />
       ))}

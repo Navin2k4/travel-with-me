@@ -18,8 +18,10 @@
     "db:migrate": "turbo -F @travel-with-me/db db:migrate"
   },
   "dependencies": {
+    "@react-google-maps/api": "^2.20.8",
     "@travel-with-me/env": "*",
     "dotenv": "^17.2.2",
+    "react-is": "^19.2.5",
     "zod": "^4.1.13"
   },
   "devDependencies": {

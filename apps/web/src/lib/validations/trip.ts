@@ -1,9 +1,12 @@
 import { z } from "zod";
 
+const emptyStringToUndefined = (value: unknown) =>
+  typeof value === "string" && value.trim().length === 0 ? undefined : value;
+
 export const CreateTripSchema = z.object({
   title: z.string().min(1).max(160),
   description: z.string().max(4000).optional(),
-  coverImage: z.string().url().optional(),
+  coverImage: z.preprocess(emptyStringToUndefined, z.string().url().optional()),
   startPoint: z.string().max(160).optional(),
   dateFlexibility: z.enum(["FIXED", "MAY_CHANGE"]).optional(),
   transportMode: z.enum(["FLIGHT", "TRAIN", "BUS", "CAR", "BIKE", "SHIP", "WALK", "OTHER"]).optional(),
@@ -24,7 +27,7 @@ export const UpdateTripSchema = z.object({
   tripId: z.string().min(1),
   title: z.string().min(1).max(160),
   description: z.string().max(4000).optional(),
-  coverImage: z.string().url().nullable().optional(),
+  coverImage: z.preprocess(emptyStringToUndefined, z.string().url().nullable().optional()),
   startPoint: z.string().max(160).optional(),
   dateFlexibility: z.enum(["FIXED", "MAY_CHANGE"]).optional(),
   transportMode: z.enum(["FLIGHT", "TRAIN", "BUS", "CAR", "BIKE", "SHIP", "WALK", "OTHER"]).nullable().optional(),

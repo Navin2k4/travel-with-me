@@ -129,6 +129,7 @@ model User {
   sessions        Session[]
   createdInvites  TripInvite[]      @relation("InviteCreator")
   tripJoinRequests TripJoinRequest[] @relation("JoinRequestUser")
+  plannedPlaces   TripPlannedPlace[] @relation("PlannedPlaceCreatedBy")
 
   @@index([name])
 }
@@ -155,11 +156,34 @@ model Trip {
   expenses      Expense[]
   settlements   Settlement[]
   visitedPlaces VisitedPlace[]
+  plannedPlaces TripPlannedPlace[]
   invites       TripInvite[]
   joinRequests  TripJoinRequest[]
 
   @@index([createdById, createdAt])
   @@index([startDate, endDate])
+}
+
+model TripPlannedPlace {
+  id               String   @id @default(cuid())
+  tripId           String
+  googlePlaceId    String
+  name             String
+  formattedAddress String?
+  latitude         Float
+  longitude        Float
+  mapUrl           String?
+  position         Int
+  createdById      String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  trip             Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  createdBy        User     @relation("PlannedPlaceCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@unique([tripId, googlePlaceId])
+  @@index([tripId, position])
+  @@index([createdById, createdAt])
 }
 
 model TripParticipant {

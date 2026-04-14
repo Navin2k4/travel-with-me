@@ -8,13 +8,6 @@ import { InviteManager } from "@/components/trips/invite-manager";
 import { DEFAULT_USER_AVATAR_URL } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -156,37 +149,37 @@ export function TripDetailTab({
       {/* LEFT COLUMN: Configuration */}
       <div className="grid gap-6 h-fit">
         
-        <Card className="border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
-            <Info className="w-5 h-5 text-indigo-500" />
-            <h3 className="font-semibold text-slate-800">General Information</h3>
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
+          <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-5 py-4">
+            <Info className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold text-foreground">General Information</h3>
           </div>
-          <CardContent className="p-5 grid gap-4">
+          <div className="grid gap-4 p-5">
             <div className="grid gap-2">
-              <Label htmlFor="workspace-trip-title" className="text-slate-600">Trip Title</Label>
+              <Label htmlFor="workspace-trip-title" className="text-muted-foreground">Trip Title</Label>
               <Input
                 id="workspace-trip-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Give your trip a catchy name"
-                className="bg-white focus-visible:ring-indigo-500"
+                className="border-border"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="workspace-trip-description" className="text-slate-600">Description</Label>
+              <Label htmlFor="workspace-trip-description" className="text-muted-foreground">Description</Label>
               <Textarea
                 id="workspace-trip-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="What's this trip about?"
-                className="min-h-[100px] bg-white focus-visible:ring-indigo-500"
+                className="min-h-[100px] border-border"
               />
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="grid gap-2">
-                <Label className="text-slate-600">Trip Status</Label>
+                <Label className="text-muted-foreground">Trip Status</Label>
                 <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
-                  <SelectTrigger className="w-full bg-white focus:ring-indigo-500">
+                  <SelectTrigger className="w-full border-border">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -198,46 +191,46 @@ export function TripDetailTab({
                 </Select>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
-            <SuitcaseSimple className="w-5 h-5 text-emerald-500" />
-            <h3 className="font-semibold text-slate-800">Logistics & Planning</h3>
           </div>
-          <CardContent className="p-5 grid gap-5">
-            <div className="grid gap-4 sm:grid-cols-2 p-4 bg-slate-50/50 rounded-xl border border-slate-100">
+        </div>
+
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
+          <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-5 py-4">
+            <SuitcaseSimple className="h-5 w-5 text-muted-foreground" />
+            <h3 className="font-semibold text-foreground">Logistics & Planning</h3>
+          </div>
+          <div className="grid gap-5 p-5">
+            <div className="grid gap-4 rounded-xl border border-border bg-muted/20 p-4 sm:grid-cols-2">
               <div className="grid gap-2">
-                <Label htmlFor="workspace-trip-start" className="text-slate-600 flex items-center gap-1">
-                  <Calendar className="w-4 h-4 text-slate-400" /> Start Date
+                <Label htmlFor="workspace-trip-start" className="flex items-center gap-1 text-muted-foreground">
+                  <Calendar className="h-4 w-4" /> Start Date
                 </Label>
                 <Input
                   id="workspace-trip-start"
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="bg-white"
+                  className="border-border"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="workspace-trip-end" className="text-slate-600 flex items-center gap-1">
-                  <Calendar className="w-4 h-4 text-slate-400" /> End Date
+                <Label htmlFor="workspace-trip-end" className="flex items-center gap-1 text-muted-foreground">
+                  <Calendar className="h-4 w-4" /> End Date
                 </Label>
                 <Input
                   id="workspace-trip-end"
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="bg-white"
+                  className="border-border"
                 />
               </div>
               <div className="grid gap-2 sm:col-span-2">
-                <Label className="text-slate-600 flex items-center gap-1">
-                  <Gear className="w-4 h-4 text-slate-400" /> Date Flexibility
+                <Label className="flex items-center gap-1 text-muted-foreground">
+                  <Gear className="h-4 w-4" /> Date Flexibility
                 </Label>
                 <Select value={dateFlexibility} onValueChange={(v) => setDateFlexibility(v as typeof dateFlexibility)}>
-                  <SelectTrigger className="w-full bg-white">
+                  <SelectTrigger className="w-full border-border">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -250,24 +243,24 @@ export function TripDetailTab({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
-                <Label htmlFor="workspace-start-point" className="text-slate-600 flex items-center gap-1">
-                  <MapPin className="w-4 h-4 text-slate-400" /> Start Point
+                <Label htmlFor="workspace-start-point" className="flex items-center gap-1 text-muted-foreground">
+                  <MapPin className="h-4 w-4" /> Start Point
                 </Label>
                 <Input
                   id="workspace-start-point"
                   value={startPoint}
                   onChange={(e) => setStartPoint(e.target.value)}
                   placeholder="e.g. London, UK"
-                  className="bg-white"
+                  className="border-border"
                 />
               </div>
               
               <div className="grid gap-2">
-                <Label className="text-slate-600 flex items-center gap-1">
-                  <Car className="w-4 h-4 text-slate-400" /> Mode of Transport
+                <Label className="flex items-center gap-1 text-muted-foreground">
+                  <Car className="h-4 w-4" /> Mode of Transport
                 </Label>
                 <Select value={transportMode || "NONE"} onValueChange={(v) => setTransportMode(v === "NONE" ? "" : (v as typeof transportMode))}>
-                  <SelectTrigger className="w-full bg-white">
+                  <SelectTrigger className="w-full border-border">
                     <SelectValue placeholder="Optional transport mode" />
                   </SelectTrigger>
                   <SelectContent>
@@ -285,20 +278,20 @@ export function TripDetailTab({
               </div>
 
               <div className="grid gap-2 sm:col-span-2">
-                <Label htmlFor="workspace-transport-notes" className="text-slate-600">Transport Notes</Label>
+                <Label htmlFor="workspace-transport-notes" className="text-muted-foreground">Transport Notes</Label>
                 <Input
                   id="workspace-transport-notes"
                   value={transportNotes}
                   onChange={(e) => setTransportNotes(e.target.value)}
                   placeholder="Flight tickets booking ID, Car rental details, etc."
-                  className="bg-white"
+                  className="border-border"
                 />
               </div>
             </div>
-          </CardContent>
-          <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3 rounded-b-xl">
+          </div>
+          <div className="flex items-center justify-end gap-3 border-t border-border bg-muted/20 p-4">
             {hasChanges && (
-              <span className="text-sm font-medium text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+              <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
                 Unsaved changes
               </span>
             )}
@@ -306,84 +299,51 @@ export function TripDetailTab({
               disabled={isPending || title.trim().length === 0 || !hasChanges} 
               onClick={saveTripDetails} 
               type="button"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
             >
               {isPending ? "Saving changes..." : "Save Trip Details"}
             </Button>
           </div>
-        </Card>
+        </div>
 
       </div>
 
       {/* RIGHT COLUMN: Access Control & Overview */}
       <div className="grid gap-6 h-fit">
         
-        {/* Quick Stats Widget (replaces the basic boxes from old design) */}
-        <Card className="border-slate-200 shadow-sm overflow-hidden bg-linear-to-br from-slate-800 to-slate-900 text-white">
-          <CardContent className="p-5">
-            <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-700">
-              <h3 className="font-semibold text-slate-100 flex items-center gap-2">
-                <Info className="w-4 h-4 text-indigo-400" />
-                Snapshot
-              </h3>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-1">
-                  <Users className="w-3.5 h-3.5" /> Members
-                </span>
-                <span className="text-xl font-bold">{participantsCount}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-1">
-                  <Receipt className="w-3.5 h-3.5" /> Expenses
-                </span>
-                <span className="text-xl font-bold">{expensesCount}</span>
-              </div>
-              <div className="col-span-2 pt-2 border-t border-slate-700">
-                <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-1">
-                  <Coins className="w-3.5 h-3.5" /> Total Spend
-                </span>
-                <span className="text-2xl font-bold text-emerald-400 tracking-tight">
-                  {formatCurrency(totalSpend)}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+
 
         {currentUserId === trip.createdById && (
-          <Card className="border-amber-200/80 shadow-sm overflow-hidden bg-amber-50/30">
-            <div className="px-5 py-4 border-b border-amber-100 flex items-center justify-between bg-amber-50/60">
+          <div className="overflow-hidden rounded-lg border border-border bg-card">
+            <div className="flex items-center justify-between border-b border-border bg-muted/30 px-5 py-4">
               <div className="flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-amber-600" />
-                <h3 className="font-semibold text-slate-800">Join Requests</h3>
+                <UserPlus className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-foreground">Join Requests</h3>
               </div>
               {trip.joinRequests.length > 0 && (
-                <Badge className="bg-amber-500 hover:bg-amber-600">{trip.joinRequests.length}</Badge>
+                <Badge className="bg-primary text-primary-foreground hover:bg-primary/90">{trip.joinRequests.length}</Badge>
               )}
             </div>
-            <CardContent className="p-0">
+            <div className="p-0">
               {trip.joinRequests.length === 0 ? (
                 <div className="p-6 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white border border-amber-100 shadow-xs mb-3 text-amber-300">
-                    <UserPlus className="w-5 h-5" />
+                  <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground">
+                    <UserPlus className="h-5 w-5" />
                   </div>
-                  <p className="text-sm text-slate-500 font-medium">No pending requests.</p>
+                  <p className="text-sm font-medium text-muted-foreground">No pending requests.</p>
                 </div>
               ) : (
-                <div className="divide-y divide-amber-100">
+                <div className="divide-y divide-border">
                   {trip.joinRequests.map((request) => (
-                    <div key={request.id} className="p-4 bg-white/60 hover:bg-white transition-colors">
-                      <div className="flex items-center gap-3 mb-3">
+                    <div key={request.id} className="bg-background p-4 transition-colors hover:bg-muted/20">
+                      <div className="mb-3 flex items-center gap-3">
                         <img
                           src={request.requesterAvatar || DEFAULT_USER_AVATAR_URL}
                           alt={request.requesterName}
-                          className="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-xs border border-slate-100"
+                          className="h-10 w-10 rounded-full border border-border object-cover"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm text-slate-800 truncate">{request.requesterName}</p>
-                          <p className="text-xs text-slate-500">
+                          <p className="truncate text-sm font-semibold text-foreground">{request.requesterName}</p>
+                          <p className="text-xs text-muted-foreground">
                             Requested {new Date(request.createdAt).toLocaleDateString()}
                           </p>
                         </div>
@@ -394,7 +354,7 @@ export function TripDetailTab({
                           type="button"
                           onClick={() => reviewJoinRequest(request.id, "APPROVED")}
                           disabled={isPending}
-                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                          className="w-full"
                         >
                           Approve
                         </Button>
@@ -404,7 +364,7 @@ export function TripDetailTab({
                           type="button"
                           onClick={() => reviewJoinRequest(request.id, "REJECTED")}
                           disabled={isPending}
-                          className="w-full text-slate-600 hover:text-slate-900 border-slate-200"
+                          className="w-full"
                         >
                           Decline
                         </Button>
@@ -413,19 +373,19 @@ export function TripDetailTab({
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
-        <Card className="border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
-            <LinkIcon className="w-5 h-5 text-blue-500" />
-            <h3 className="font-semibold text-slate-800">Invite Links</h3>
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
+          <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-5 py-4">
+            <LinkIcon className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold text-foreground">Invite Links</h3>
           </div>
-          <CardContent className="p-5">
+          <div className="p-5">
             <InviteManager tripId={trip.id} invites={trip.invites} />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
       </div>
     </div>

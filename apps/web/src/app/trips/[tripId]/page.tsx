@@ -1,11 +1,15 @@
 import { TripWorkspaceTabs } from "@/components/trips/trip-workspace-tabs";
 import { TripCoverUploadButton } from "@/components/trips/trip-cover-upload-button";
+import { TripPlannerCta } from "@/components/trips/trip-planner-cta";
 import { requireUser } from "@/lib/auth/guards";
 import { getCurrentUser } from "@/lib/auth/session";
 import { DEFAULT_IMAGE_PLACEHOLDER_URL } from "@/lib/constants";
 import { Card } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
 import { decimalAmountToNumber } from "@/lib/money";
+import { ShareNetwork } from "@phosphor-icons/react/dist/ssr";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 type Props = {
   params: Promise<{ tripId: string }>;
@@ -90,23 +94,40 @@ export default async function TripPage({ params }: Props) {
   );
 
   return (
-    <main className="mx-auto grid w-full max-w-6xl  p-4">
-      <Card className="p-0 m-0 border-0 shadow-none rounded-xl">
+    <main className="mx-auto grid w-full max-w-6xl p-4">
+      <Card className="m-0 rounded-xl border-border p-0">
         <div className="relative overflow-hidden rounded-xl">
           <img
             src={trip.coverImage || DEFAULT_IMAGE_PLACEHOLDER_URL}
             alt={`${trip.title} cover`}
             className="h-36 w-full object-cover md:h-44"
           />
-          <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/25 to-transparent" />
-          <div className="absolute bottom-0 left-0 p-4 text-white md:p-6">
+          <div className="absolute inset-0 bg-linear-to-t from-background/95 via-background/60 to-transparent" />
+          <div className="absolute bottom-0 left-0 p-4 text-foreground md:p-6">
             <h1 className="text-2xl font-semibold md:text-3xl">{trip.title}</h1>
-            <p className="mt-1 max-w-2xl text-sm text-white/90 md:text-base">
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground md:text-base line-clamp-1">
               {trip.description || "No description provided."}
             </p>
           </div>
-          <div className="absolute bottom-4 right-4 z-10 md:bottom-6 md:right-6">
-            <TripCoverUploadButton tripId={trip.id} />
+          <div className="absolute top-0 right-0 p-4 text-foreground md:p-6">
+            <Button
+              asChild
+              aria-label="Open shareable trip story"
+              className="rounded-full border border-border bg-primary h-12 w-12 text-xs font-semibold uppercase tracking-wider text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <Link href={`/trips/${tripId}/story`} target="_blank" rel="noopener noreferrer">
+                <ShareNetwork className="h-5 w-5" weight="bold" />
+              </Link>
+            </Button>
+          </div>
+          <div className="absolute flex gap-2 items-center justify-end bottom-4 right-4 z-10 md:bottom-6 md:right-4">
+
+            <div className="">
+              <TripCoverUploadButton tripId={trip.id} />
+            </div>
+
+            <TripPlannerCta tripId={tripId} />
+
           </div>
         </div>
       </Card>

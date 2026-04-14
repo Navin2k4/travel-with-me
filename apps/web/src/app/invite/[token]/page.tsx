@@ -18,7 +18,7 @@ export default async function InvitePage({ params }: Props) {
   if (!validation.ok) {
     return (
       <main className="mx-auto flex min-h-[70vh] max-w-4xl items-center justify-center p-4">
-        <Card className="w-full max-w-lg">
+        <Card className="w-full max-w-lg border-border">
           <CardHeader>
             <CardTitle>Invite Invalid</CardTitle>
             <CardDescription>This invite is {String(validation.error)}.</CardDescription>
@@ -37,7 +37,7 @@ export default async function InvitePage({ params }: Props) {
 
   return (
     <main className="mx-auto flex min-h-[70vh] max-w-4xl items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
+      <Card className="w-full max-w-lg border-border bg-card">
         <CardHeader>
           <CardTitle>Trip Invite</CardTitle>
           <CardDescription>
@@ -55,7 +55,7 @@ export default async function InvitePage({ params }: Props) {
                 <Button>Login to continue</Button>
               </Link>
               <Link href={`/signup?invite=${encodeURIComponent(token)}&next=${encodeURIComponent(`/invite/${token}`)}` as Route}>
-                <Button variant="outline">Sign up</Button>
+                <Button variant="outline">Sign Up</Button>
               </Link>
             </div>
           )}

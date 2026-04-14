@@ -21,7 +21,7 @@ export function TripAccessAction({
 
   if (hasAccess) {
     return (
-      <Button asChild size="sm">
+      <Button asChild size="sm" className="rounded-full border border-border bg-primary text-primary-foreground hover:bg-primary/90">
         <Link href={`/trips/${tripId}` as Route}>Open</Link>
       </Button>
     );

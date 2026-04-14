@@ -6,6 +6,10 @@ dotenv.config({
   path: "../../apps/web/.env",
 });
 
+dotenv.config({
+  path: "../../apps/web/src/app/.env",
+});
+
 export default defineConfig({
   schema: path.join("prisma", "schema"),
   migrations: {

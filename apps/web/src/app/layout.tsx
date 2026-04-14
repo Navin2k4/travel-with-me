@@ -1,21 +1,34 @@
 import type { Metadata } from "next";
-import favicon from "@/favicon.ico";
+import { Geist, Geist_Mono, Roboto, Noto_Sans } from "next/font/google";
 
-
+import { AuthFooter } from "@/components/auth/auth-footer";
 import Header from "@/components/header";
+import { ChromeShell } from "@/components/layout/chrome-shell";
 import Providers from "@/components/providers";
 import "../index.css";
-import { AuthFooter } from "@/components/auth/auth-footer";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
   title: "Travel With Me",
-  description: "Travel With Me",
-  icons: {
-    icon: favicon.src,
-    shortcut: favicon.src,
-    apple: favicon.src,
-  },
+  description:
+    "Personal finance tracker: accounts, assets, loans, investments, and net worth.",
 };
+
+import { cn } from "@/lib/utils";
+
+const notoSansHeading = Noto_Sans({ subsets: ['latin'], variable: '--font-heading' });
+
+const roboto = Roboto({ subsets: ['latin'], variable: '--font-sans' });
+
 
 export default function RootLayout({
   children,
@@ -23,14 +36,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning >
-      <body className={`antialiased`}>
+    <html
+      lang="en"
+      className={cn(
+        "dark",
+        geistSans.variable,
+        geistMono.variable,
+        roboto.variable,
+        notoSansHeading.variable
+      )}
+      suppressHydrationWarning
+    >
+      <body className="antialiased">
         <Providers>
           <div className="min-h-screen">
-            <Header />
-            <div>{children}</div>
+            <ChromeShell header={<Header />} footer={<AuthFooter />}>
+              {children}
+            </ChromeShell>
           </div>
-          <AuthFooter />
         </Providers>
       </body>
     </html>

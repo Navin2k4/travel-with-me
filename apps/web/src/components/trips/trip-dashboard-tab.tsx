@@ -1,7 +1,13 @@
 import { formatCurrency } from "@/lib/format";
-import { placeCategoryLabel, type PlaceCategory } from "@/lib/places/place-categories";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount, AvatarImage } from "@/components/ui/avatar";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 import {
   Users,
   Receipt,
@@ -17,6 +23,7 @@ import {
   PersonSimpleWalk,
   NavigationArrow
 } from "@phosphor-icons/react";
+import { Bar, BarChart, CartesianGrid, Cell, LabelList, XAxis, YAxis } from "recharts";
 import { DEFAULT_USER_AVATAR_URL } from "@/lib/constants";
 
 type ParticipantView = {
@@ -46,22 +53,6 @@ type ExpenseView = {
   }>;
 };
 
-type VisitedPlaceView = {
-  id: string;
-  tripId: string;
-  name: string;
-  category: PlaceCategory;
-  visitedAt: string;
-  dayNumber: number | null;
-  tags: string[];
-  rating: number | null;
-  notes: string | null;
-  locationUrl: string | null;
-  visitors: Array<{ id: string; name: string; avatar: string | null }>;
-  ratings: Array<{ userId: string; userName: string; rating: number }>;
-  media: Array<{ id: string; url: string; type: "IMAGE" | "VIDEO" }>;
-};
-
 type TripDashboardTabProps = {
   trip: {
     id: string;
@@ -87,20 +78,26 @@ type TripDashboardTabProps = {
   }>;
   totalVisitedPlaces: number;
   averagePlaceRating: number | null;
-  timelinePlaces: VisitedPlaceView[];
 };
 
 function getTransportIcon(mode: string | null) {
   switch (mode) {
-    case "FLIGHT": return <AirplaneTilt weight="fill" className="text-blue-500" />;
-    case "TRAIN": return <Train weight="fill" className="text-orange-500" />;
-    case "BUS": return <Bus weight="fill" className="text-emerald-500" />;
-    case "CAR": return <Car weight="fill" className="text-indigo-500" />;
-    case "BIKE": return <Bicycle weight="fill" className="text-rose-500" />;
-    case "SHIP": return <Boat weight="fill" className="text-cyan-500" />;
-    case "WALK": return <PersonSimpleWalk weight="fill" className="text-amber-500" />;
-    default: return <NavigationArrow weight="fill" className="text-slate-500" />;
+    case "FLIGHT": return <AirplaneTilt weight="fill" className="text-muted-foreground" />;
+    case "TRAIN": return <Train weight="fill" className="text-muted-foreground" />;
+    case "BUS": return <Bus weight="fill" className="text-muted-foreground" />;
+    case "CAR": return <Car weight="fill" className="text-muted-foreground" />;
+    case "BIKE": return <Bicycle weight="fill" className="text-muted-foreground" />;
+    case "SHIP": return <Boat weight="fill" className="text-muted-foreground" />;
+    case "WALK": return <PersonSimpleWalk weight="fill" className="text-muted-foreground" />;
+    default: return <NavigationArrow weight="fill" className="text-muted-foreground" />;
   }
+}
+
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "NA";
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]![0]}${parts[1]![0]}`.toUpperCase();
 }
 
 export function TripDashboardTab({
@@ -111,286 +108,251 @@ export function TripDashboardTab({
   expenseByCategory,
   totalVisitedPlaces,
   averagePlaceRating,
-  timelinePlaces,
 }: TripDashboardTabProps) {
-  // Pre-calculate colors for expense categories to make the progress bar look good
-  const CATEGORY_COLORS = [
-    "bg-indigo-500",
-    "bg-emerald-500",
-    "bg-amber-500",
-    "bg-rose-500",
-    "bg-cyan-500",
-    "bg-violet-500",
-    "bg-fuchsia-500",
-    "bg-lime-500",
-    "bg-blue-500",
-    "bg-orange-500",
-  ];
+  const visibleMembers = participants.slice(0, 6);
+  const remainingMembers = Math.max(participants.length - visibleMembers.length, 0);
+  const barRowsBase = expenseByCategory.slice(0, 6).map((group, index) => ({
+    key: `bar-${index + 1}`,
+    category: group.category,
+    amount: group.total,
+    color:
+      index === 0
+        ? "color-mix(in oklch, var(--primary) 100%, transparent)"
+        : index === 1
+          ? "color-mix(in oklch, var(--primary) 84%, transparent)"
+          : index === 2
+            ? "color-mix(in oklch, var(--primary) 68%, transparent)"
+            : index === 3
+              ? "color-mix(in oklch, var(--primary) 52%, transparent)"
+              : index === 4
+                ? "color-mix(in oklch, var(--primary) 40%, transparent)"
+                : "color-mix(in oklch, var(--primary) 28%, transparent)",
+  }));
+  const remainingTotal = expenseByCategory
+    .slice(6)
+    .reduce((sum, group) => sum + group.total, 0);
+  const barRows = remainingTotal > 0
+    ? [
+      ...barRowsBase,
+      {
+        key: "bar-other",
+        category: "Other",
+        amount: remainingTotal,
+        color: "color-mix(in oklch, var(--primary) 20%, transparent)",
+      },
+    ]
+    : barRowsBase;
+  const chartConfig: ChartConfig = barRows.reduce<ChartConfig>(
+    (config, row) => {
+      config[row.key] = {
+        label: row.category,
+        color: row.color,
+      };
+      return config;
+    },
+    {
+      amount: {
+        label: "Amount",
+      },
+    },
+  );
 
   return (
     <div className="grid gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
-      {/* 1. HERO KPI RIBBON */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-linear-to-br from-indigo-500 to-violet-600 text-white border-0 shadow-md">
-          <CardContent className="p-5 flex flex-col justify-between h-full gap-2">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <Card className="border-border">
+          <CardContent className="flex h-full flex-col justify-between gap-2 p-5">
             <div className="flex items-center justify-between">
-              <span className="text-indigo-100 text-sm font-medium">Total Spend</span>
-              <Coins className="w-5 h-5 text-indigo-200" weight="fill" />
+              <span className="text-sm text-muted-foreground">Total Spend</span>
+              <Coins className="h-5 w-5 text-muted-foreground" weight="fill" />
             </div>
             <div>
-              <div className="text-3xl font-bold tracking-tight">{formatCurrency(totalSpend)}</div>
-              <div className="text-xs text-indigo-200 mt-1">{expenses.length} total expenses logged</div>
+              <div className="text-2xl font-semibold tracking-tight text-foreground">{formatCurrency(totalSpend)}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{expenses.length} expenses</div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-linear-to-br from-sky-500 to-blue-600 text-white border-0 shadow-md">
-          <CardContent className="p-5 flex flex-col justify-between h-full gap-2">
+        <Card className="border-border">
+          <CardContent className="flex h-full flex-col justify-between gap-2 p-5">
             <div className="flex items-center justify-between">
-              <span className="text-sky-100 text-sm font-medium">Participants</span>
-              <Users className="w-5 h-5 text-sky-200" weight="fill" />
+              <span className="text-sm text-muted-foreground">Members</span>
+              <Users className="h-5 w-5 text-muted-foreground" weight="fill" />
             </div>
             <div>
-              <div className="text-3xl font-bold tracking-tight">{participants.length}</div>
-              <div className="text-xs text-sky-200 mt-1">Active trip members</div>
+              <div className="text-2xl font-semibold tracking-tight text-foreground">{participants.length}</div>
+              <div className="mt-1 text-xs text-muted-foreground">Active members</div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 shadow-sm relative overflow-hidden group">
-          <div className="absolute inset-y-0 left-0 w-1 bg-emerald-500 rounded-l-xl" />
-          <CardContent className="p-5 flex flex-col justify-between h-full gap-2">
+        <Card className="border-border">
+          <CardContent className="flex h-full flex-col justify-between gap-2 p-5">
             <div className="flex items-center justify-between">
-              <span className="text-slate-500 text-sm font-medium">Places Visited</span>
-              <div className="p-1.5 bg-emerald-100 rounded-md text-emerald-600">
-                <MapPinLine className="w-4 h-4" weight="bold" />
-              </div>
+              <span className="text-sm text-muted-foreground">Places Visited</span>
+              <MapPinLine className="h-5 w-5 text-muted-foreground" weight="bold" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-slate-800 tracking-tight">{totalVisitedPlaces}</div>
-              <div className="text-xs text-slate-500 mt-1">
-                Avg rating: {averagePlaceRating ? averagePlaceRating.toFixed(1) : "N/A"}
-              </div>
+              <div className="text-2xl font-semibold tracking-tight text-foreground">{totalVisitedPlaces}</div>
+              <div className="mt-1 text-xs text-muted-foreground">Avg rating: {averagePlaceRating ? averagePlaceRating.toFixed(1) : "N/A"}</div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 shadow-sm relative overflow-hidden">
-          <div className="absolute inset-y-0 left-0 w-1 bg-amber-500 rounded-l-xl" />
-          <CardContent className="p-5 flex flex-col justify-between h-full gap-2">
+        <Card className="border-border">
+          <CardContent className="flex h-full flex-col justify-between gap-2 p-5">
             <div className="flex items-center justify-between">
-              <span className="text-slate-500 text-sm font-medium">Status</span>
-              <div className="p-1.5 bg-amber-100 rounded-md text-amber-600">
-                <CalendarBlank className="w-4 h-4" weight="bold" />
-              </div>
+              <span className="text-sm text-muted-foreground">Status</span>
+              <CalendarBlank className="h-5 w-5 text-muted-foreground" weight="bold" />
             </div>
             <div>
-              <div className="text-xl font-bold text-slate-800 tracking-tight capitalize">{trip.status.toLowerCase()}</div>
-              <div className="text-xs text-slate-500 mt-1">
-                {trip.startDate ? new Date(trip.startDate).toLocaleDateString() : "No start date"}
-              </div>
+              <div className="text-xl font-semibold tracking-tight capitalize text-foreground">{trip.status.toLowerCase()}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{trip.startDate ? new Date(trip.startDate).toLocaleDateString() : "No start date"}</div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid lg:grid-cols-[1.5fr_1fr] gap-6">
-        
-        {/* LEFT COLUMN: Financial Overview & Timeline */}
+      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <div className="grid gap-6">
-          
-          {/* Visual Financial Breakdown */}
-          <Card className="border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div className="overflow-hidden border-border">
+            <div className="flex items-center justify-between border-b border-border bg-muted/30 px-5 py-4">
               <div className="flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-indigo-500" />
-                <h3 className="font-semibold text-slate-800">Expense Breakdown</h3>
+                <Receipt className="h-5 w-5 text-muted-foreground" />
+                <h3 className="font-semibold text-foreground">Expense Breakdown</h3>
               </div>
-              <Badge variant="secondary" className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100">
+              <Badge variant="secondary">
                 {expenseByCategory.length} Categories
               </Badge>
             </div>
-            <CardContent className="p-5">
+            <div className="py-4">
               {totalSpend === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                  <Coins className="w-10 h-10 text-slate-300 mb-2" />
-                  <p className="text-sm font-medium text-slate-500">No expenses recorded yet</p>
-                  <p className="text-xs text-slate-400 mt-1">Start adding expenses to see your spending breakdown.</p>
+                <div className="rounded-lg border border-dashed border-border bg-muted/20 py-8 text-center">
+                  <Coins className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
+                  <p className="text-sm font-medium text-foreground">No expenses recorded yet</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Start adding expenses to see your spending breakdown.</p>
                 </div>
               ) : (
-                <div className="space-y-6">
-                  {/* Progress Bar Widget */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500 font-medium">Total Allocation</span>
-                      <span className="font-bold text-slate-800">{formatCurrency(totalSpend)}</span>
-                    </div>
-                    <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
-                      {expenseByCategory.map((group, idx) => {
-                        const percentage = (group.total / totalSpend) * 100;
-                        const colorClass = CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
-                        return (
-                          <div 
-                            key={group.category} 
-                            style={{ width: `${percentage}%` }}
-                            className={`${colorClass} h-full transition-all duration-500 hover:brightness-110`}
-                            title={`${group.category}: ${formatCurrency(group.total)}`}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Category List */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                    {expenseByCategory.slice(0, 6).map((group, idx) => {
-                      const percentage = ((group.total / totalSpend) * 100).toFixed(1);
-                      const colorClass = CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
-                      return (
-                        <div key={group.category} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 shadow-xs bg-white hover:border-slate-200 transition-colors">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-3 h-3 rounded-full ${colorClass} shadow-sm`} />
-                            <div>
-                              <p className="text-sm font-medium text-slate-700 truncate max-w-[120px]" title={group.category}>
-                                {group.category}
-                              </p>
-                              <p className="text-xs text-slate-400">{group.count} item(s)</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-semibold text-slate-800">{formatCurrency(group.total)}</p>
-                            <p className="text-xs font-medium text-slate-400">{percentage}%</p>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  {expenseByCategory.length > 6 && (
-                    <div className="text-center pt-2">
-                      <span className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-                        + {expenseByCategory.length - 6} more categories
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Places Timeline Condensed */}
-          <Card className="border-slate-200 shadow-sm overflow-hidden h-fit">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <div className="flex items-center gap-2">
-                <MapPinLine className="w-5 h-5 text-emerald-500" />
-                <h3 className="font-semibold text-slate-800">Recent Places</h3>
-              </div>
-            </div>
-            <CardContent className="p-0">
-              {timelinePlaces.length === 0 ? (
-                <div className="p-6 text-center text-sm text-slate-500">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 mb-3">
-                    <MapPinLine className="w-6 h-6 text-slate-400" />
-                  </div>
-                  <p>Your timeline is looking a bit empty.</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100">
-                  {timelinePlaces.slice(-4).reverse().map((place, idx) => (
-                    <div key={place.id} className="p-4 flex gap-4 items-start hover:bg-slate-50/50 transition-colors">
-                      <div className="flex flex-col items-center mt-1">
-                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 ring-4 ring-emerald-50" />
-                        {idx !== Math.min(timelinePlaces.length, 4) - 1 && (
-                          <div className="w-0.5 h-full min-h-[40px] bg-slate-100 mt-2 rounded-full" />
-                        )}
-                      </div>
-                      <div className="flex-1 pb-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-semibold text-slate-800">{place.name}</p>
-                          <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full shrink-0">
-                            {new Date(place.visitedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-0.5">{placeCategoryLabel(place.category)}</p>
-                        {place.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {place.tags.slice(0, 3).map((tag) => (
-                              <span key={tag} className="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100">
-                                {tag}
-                              </span>
-                            ))}
-                            {place.tags.length > 3 && (
-                               <span className="text-[10px] text-slate-400 px-1 py-0.5">+{place.tags.length - 3}</span>
+                <div>
+                  <ChartContainer
+                    config={chartConfig}
+                    className="h-[320px]"
+                  >
+                    <BarChart
+                      accessibilityLayer
+                      data={barRows}
+                      layout="vertical"
+                      margin={{ left: 0, right: 8 }}
+                    >
+                      <YAxis
+                        dataKey="category"
+                        type="category"
+                        tickLine={false}
+                        tickMargin={8}
+                        axisLine={false}
+                        hide
+                      />
+                      <XAxis dataKey="amount" type="number" hide />
+                      <ChartTooltip
+                        cursor={false}
+                        content={
+                          <ChartTooltipContent
+                            hideLabel
+                            formatter={(value, name) => (
+                              <div className="flex w-full items-center justify-between gap-2">
+                                <span className="text-muted-foreground">{name}</span>
+                                <span className="font-medium text-foreground">
+                                  {formatCurrency(Number(value))}
+                                </span>
+                              </div>
                             )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                          />
+                        }
+                      />
+                      <Bar
+                        dataKey="amount"
+                        radius={8}
+                        fill="var(--color-bar-1)"
+                      >
+                        {barRows.map((row) => (
+                          <Cell key={`cell-${row.key}`} fill={`var(--color-${row.key})`} />
+                        ))}
+                        <LabelList
+                          dataKey="amount"
+                          position="right"
+                          offset={8}
+                          className="fill-foreground"
+                        />
+                      </Bar>
+                    </BarChart>
+                  </ChartContainer>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {barRows.map((row) => (
+                      <Badge key={`badge-${row.key}`} variant="secondary" className="text-xs bg-primary/30 text-muted-foreground p-2 rounded-xl">
+                        {row.category}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
-
+            </div>
+          </div>
         </div>
 
-        {/* RIGHT COLUMN: Trip Details & People */}
         <div className="grid gap-6 h-fit">
-          
-          {/* Trip Info Card */}
-          <Card className="border-slate-200 shadow-sm overflow-hidden bg-linear-to-b from-white to-slate-50/50">
+          <Card className="overflow-hidden border-border">
             <CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 flex items-center justify-center rounded-2xl shadow-inner border border-indigo-100/50 shrink-0">
+              <div className="mb-6 flex items-center gap-3 border-b border-border pb-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-muted/40">
                   {getTransportIcon(trip.transportMode)}
                 </div>
                 <div>
-                  <h2 className="font-bold text-lg text-slate-800 leading-tight truncate" title={trip.title}>
+                  <h2 className="truncate text-lg font-semibold leading-tight text-foreground" title={trip.title}>
                     {trip.title}
                   </h2>
-                  <p className="text-sm text-slate-500 flex items-center gap-1 mt-0.5">
+                  <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
                     {trip.startPoint || "Unknown departure"}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-500 flex items-center gap-1.5">
-                    <CalendarBlank className="w-4 h-4 text-slate-400" />
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <CalendarBlank className="h-4 w-4" />
                     Timeline
                   </span>
-                  <span className="font-medium text-slate-700 text-right">
+                  <span className="text-right font-medium text-foreground">
                     {trip.startDate ? new Date(trip.startDate).toLocaleDateString(undefined, {month:'short', day:'numeric'}) : "?"} 
                     {" "}-{" "} 
                     {trip.endDate ? new Date(trip.endDate).toLocaleDateString(undefined, {month:'short', day:'numeric'}) : "?"}
                   </span>
                 </div>
                 
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-500 flex items-center gap-1.5">
-                    <NavigationArrow className="w-4 h-4 text-slate-400" />
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <NavigationArrow className="h-4 w-4" />
                     Transport
                   </span>
-                  <span className="font-medium text-slate-700 capitalize">
+                  <span className="font-medium capitalize text-foreground">
                     {trip.transportMode?.toLowerCase() || "Not set"}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-500 flex items-center gap-1.5">
-                    <AirplaneTilt className="w-4 h-4 text-slate-400" />
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <AirplaneTilt className="h-4 w-4" />
                     Flexibility
                   </span>
-                  <span className="font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md text-xs">
+                  <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
                     {trip.dateFlexibility.replace("_", " ")}
                   </span>
                 </div>
               </div>
               
               {trip.description && (
-                <div className="mt-5 p-3 bg-white rounded-xl border border-slate-100 shadow-xs">
-                  <p className="text-xs leading-relaxed text-slate-600 line-clamp-3 italic">
+                <div className="mt-5 rounded-xl border border-border bg-muted/20 p-3">
+                  <p className="line-clamp-3 text-xs leading-relaxed text-muted-foreground">
                     "{trip.description}"
                   </p>
                 </div>
@@ -398,45 +360,35 @@ export function TripDashboardTab({
             </CardContent>
           </Card>
 
-          {/* Members Overview */}
-          <Card className="border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <Card className="overflow-hidden border-border">
+            <div className="flex items-center justify-between border-b border-border bg-muted/30 px-5 py-4">
               <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-blue-500" />
-                <h3 className="font-semibold text-slate-800">Trip Members</h3>
+                <Users className="h-5 w-5 text-muted-foreground" />
+                <h3 className="font-semibold text-foreground">Trip Members</h3>
               </div>
-              <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+              <span className="rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
                 {participants.length} total
               </span>
             </div>
-            <CardContent className="p-0">
-              <div className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto custom-scrollbar">
-                {participants.map((p) => (
-                  <div key={p.id} className="p-4 flex items-center gap-3 hover:bg-slate-50 transition-colors">
-                    <img
-                      src={p.avatar || DEFAULT_USER_AVATAR_URL}
-                      alt={p.name}
-                      className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-xs border border-slate-100"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm text-slate-800 truncate">{p.name}</p>
-                      <div className="flex gap-1 mt-0.5 overflow-hidden">
-                        {p.tags.length === 0 ? (
-                          <span className="text-[10px] text-slate-400">Traveler</span>
-                        ) : (
-                          p.tags.slice(0, 2).map((tag) => (
-                            <span key={tag.id} className="text-[9px] uppercase tracking-wider font-semibold text-blue-700 bg-blue-50 px-1.5 rounded border border-blue-100 whitespace-nowrap">
-                              {tag.label}
-                            </span>
-                          ))
-                        )}
-                        {p.tags.length > 2 && (
-                          <span className="text-[9px] text-slate-400 flex items-center">+{p.tags.length - 2}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+            <CardContent className="grid gap-4 p-5">
+              <AvatarGroup className="grayscale">
+                {visibleMembers.map((member) => (
+                  <Avatar key={member.id}>
+                    <AvatarImage src={member.avatar || DEFAULT_USER_AVATAR_URL} alt={member.name} />
+                    <AvatarFallback>{getInitials(member.name)}</AvatarFallback>
+                  </Avatar>
                 ))}
+                {remainingMembers > 0 ? <AvatarGroupCount>+{remainingMembers}</AvatarGroupCount> : null}
+              </AvatarGroup>
+              <div className="space-y-1 flex flex-wrap gap-2">
+                {visibleMembers.map((member) => (
+                  <p key={`member-name-${member.id}`} className="bg-primary/30 w-fit px-2 py-1 rounded-2xl truncate text-sm text-muted-foreground">
+                    {member.name}
+                  </p>
+                ))}
+                {remainingMembers > 0 ? (
+                  <p className="text-sm text-muted-foreground">and {remainingMembers} more...</p>
+                ) : null}
               </div>
             </CardContent>
           </Card>

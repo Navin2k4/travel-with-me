@@ -47,6 +47,7 @@ export function CreateTripForm({
   const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
   const [participantSearch, setParticipantSearch] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const canSubmit = useMemo(
     () => title.trim().length > 0 && participantIds.length > 0 && startDate.length > 0,
@@ -65,6 +66,47 @@ export function CreateTripForm({
     if (!q) return user.hasTripHistory;
     return user.name.toLowerCase().includes(q) || user.email.toLowerCase().includes(q);
   });
+
+  const handleCreateTrip = () => {
+    if (!canSubmit || isPending || isSubmitting) return;
+
+    setIsSubmitting(true);
+    startTransition(async () => {
+      try {
+        const result = await createTripAction({
+          title,
+          description,
+          coverImage,
+          startPoint,
+          dateFlexibility,
+          transportMode: transportMode || undefined,
+          transportNotes,
+          status,
+          startDate,
+          endDate: endDate || undefined,
+          createdById,
+          participantIds,
+        });
+        if (!result.ok) {
+          toast.error("Failed to create trip.");
+          return;
+        }
+        toast.success("Trip created.");
+        setTitle("");
+        setDescription("");
+        setCoverImage("");
+        setStartPoint("");
+        setDateFlexibility("FIXED");
+        setTransportMode("");
+        setTransportNotes("");
+        setStatus("PLANNING");
+        setStartDate("");
+        setEndDate("");
+      } finally {
+        setIsSubmitting(false);
+      }
+    });
+  };
 
   return (
     <Card>
@@ -282,42 +324,10 @@ export function CreateTripForm({
           )}
         </div>
         <Button
-          disabled={!canSubmit || isPending}
-          onClick={() =>
-            startTransition(async () => {
-              const result = await createTripAction({
-                title,
-                description,
-                coverImage,
-                startPoint,
-                dateFlexibility,
-                transportMode: transportMode || undefined,
-                transportNotes,
-                status,
-                startDate,
-                endDate: endDate || undefined,
-                createdById,
-                participantIds,
-              });
-              if (!result.ok) {
-                toast.error("Failed to create trip.");
-                return;
-              }
-              toast.success("Trip created.");
-              setTitle("");
-              setDescription("");
-              setCoverImage("");
-              setStartPoint("");
-              setDateFlexibility("FIXED");
-              setTransportMode("");
-              setTransportNotes("");
-              setStatus("PLANNING");
-              setStartDate("");
-              setEndDate("");
-            })
-          }
+          disabled={!canSubmit || isPending || isSubmitting}
+          onClick={handleCreateTrip}
         >
-          {isPending ? "Creating..." : "Create Trip"}
+          {isPending || isSubmitting ? "Creating..." : "Create Trip"}
         </Button>
       </CardContent>
     </Card>

@@ -241,13 +241,6 @@ export function TripWorkspaceTabs({
       }))
       .sort((a, b) => b.total - a.total);
   }, [expenses]);
-  const timelinePlaces = useMemo(
-    () =>
-      [...visitedPlaces].sort(
-        (a, b) => new Date(a.visitedAt).getTime() - new Date(b.visitedAt).getTime(),
-      ),
-    [visitedPlaces],
-  );
   const settlementParticipants = useMemo(() => {
     const byId = new Map(participants.map((p) => [p.id, p.name]));
     return participants.map((p) => ({ id: p.id, name: byId.get(p.id) ?? p.name }));
@@ -270,18 +263,40 @@ export function TripWorkspaceTabs({
     }
     return totals;
   }, [settlementMatrix, settlementParticipants]);
-  const settlementColumnTotals = useMemo(() => {
-    const totals = new Map<string, number>();
-    for (const receiver of settlementParticipants) totals.set(receiver.id, 0);
-    for (const payer of settlementParticipants) {
-      const row = settlementMatrix.get(payer.id);
-      if (!row) continue;
-      for (const receiver of settlementParticipants) {
-        totals.set(receiver.id, (totals.get(receiver.id) ?? 0) + (row.get(receiver.id) ?? 0));
+  const settlementsByPayer = useMemo(() => {
+    const grouped = new Map<
+      string,
+      {
+        payerId: string;
+        payerName: string;
+        total: number;
+        pendingCount: number;
+        settledCount: number;
+        items: SettlementView[];
       }
+    >();
+
+    for (const settlement of settlements) {
+      const existing = grouped.get(settlement.fromUserId) ?? {
+        payerId: settlement.fromUserId,
+        payerName: settlement.fromUserName,
+        total: 0,
+        pendingCount: 0,
+        settledCount: 0,
+        items: [],
+      };
+      existing.total += settlement.amount;
+      if (settlement.isSettled) {
+        existing.settledCount += 1;
+      } else {
+        existing.pendingCount += 1;
+      }
+      existing.items.push(settlement);
+      grouped.set(settlement.fromUserId, existing);
     }
-    return totals;
-  }, [settlementMatrix, settlementParticipants]);
+
+    return [...grouped.values()].sort((a, b) => b.total - a.total || a.payerName.localeCompare(b.payerName));
+  }, [settlements]);
   const spendByPerson = useMemo(() => {
     const totals = new Map<string, number>();
     for (const participant of participants) totals.set(participant.id, 0);
@@ -387,7 +402,7 @@ export function TripWorkspaceTabs({
   };
 
   return (
-    <Tabs defaultValue="overall-summary" className="grid gap-4">
+    <Tabs defaultValue="overall-summary" className="grid py-2 gap-4">
       <TabsList variant="line" className="w-full justify-start">
         <TabsTrigger value="overall-summary">Overall Trip Summary</TabsTrigger>
         <TabsTrigger value="trip-detail">Trip Detail</TabsTrigger>
@@ -417,7 +432,6 @@ export function TripWorkspaceTabs({
           expenseByCategory={expenseByCategory}
           totalVisitedPlaces={totalVisitedPlaces}
           averagePlaceRating={averagePlaceRating}
-          timelinePlaces={timelinePlaces}
         />
       </TabsContent>
 
@@ -438,10 +452,10 @@ export function TripWorkspaceTabs({
       <TabsContent value="expense-manager">
         <div className="grid gap-4 rounded-xl">
           <div className="grid gap-4">
-            <Card className="border-violet-200/70 bg-white/90 shadow-sm">
+            <Card className="border-border bg-card shadow-sm">
               <CardHeader className="rounded-t-lg ">
                 <div className="flex items-center justify-between gap-2">
-                  <CardTitle className="text-violet-900">Expense Information</CardTitle>
+                  <CardTitle className="text-card-foreground">Expense Information</CardTitle>
                   <Button type="button" onClick={() => setIsAddExpenseModalOpen(true)}>
                     Add Expense
                   </Button>
@@ -455,7 +469,7 @@ export function TripWorkspaceTabs({
                 ) : (
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-violet-100/70 hover:bg-violet-100/70">
+                      <TableRow className="bg-muted/60 hover:bg-muted/60">
                         <TableHead>Title</TableHead>
                         <TableHead>Paid By</TableHead>
                         <TableHead>Category</TableHead>
@@ -467,11 +481,11 @@ export function TripWorkspaceTabs({
                     </TableHeader>
                     <TableBody>
                       {expenses.map((expense) => (
-                        <TableRow key={expense.id} className="odd:bg-white even:bg-violet-50/30">
+                        <TableRow key={expense.id} className="odd:bg-background even:bg-muted/20">
                           <TableCell>{expense.title}</TableCell>
                           <TableCell>{expense.paidByName}</TableCell>
                           <TableCell>
-                            <Badge variant="secondary" className="bg-violet-100 text-violet-900">
+                            <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
                               {expense.customCategory?.trim() || expense.category.replace("_", " ")}
                             </Badge>
                           </TableCell>
@@ -503,12 +517,12 @@ export function TripWorkspaceTabs({
               </CardContent>
             </Card>
 
-            <Card className="border-cyan-200/70 bg-white/90 shadow-sm">
+            <Card className="border-border bg-card shadow-sm">
               <CardHeader className="rounded-t-lg">
                 <div className="flex items-center justify-between">
 
 
-                  <CardTitle className="text-cyan-900">Settlement Summary</CardTitle>
+                  <CardTitle className="text-card-foreground">Settlement Summary</CardTitle>
                   <Button variant="default" type="button" onClick={recalculateSettlement} disabled={isPending}>
                     Recalculate
                   </Button>
@@ -521,10 +535,10 @@ export function TripWorkspaceTabs({
                   </div>
                 ) : (
                   <>
-                    <div className="overflow-x-auto rounded border border-cyan-200/70 bg-cyan-50/30">
+                    <div className="overflow-x-auto rounded border border-border bg-muted/30">
                       <Table>
                         <TableHeader>
-                          <TableRow className="bg-cyan-100/70 hover:bg-cyan-100/70">
+                          <TableRow className="bg-muted/60 hover:bg-muted/60">
                             <TableHead className="min-w-32">Payer \ Receiver</TableHead>
                             {settlementParticipants.map((receiver) => (
                               <TableHead key={`receiver-${receiver.id}`} className="text-right">
@@ -536,7 +550,7 @@ export function TripWorkspaceTabs({
                         </TableHeader>
                         <TableBody>
                           {settlementParticipants.map((payer) => (
-                            <TableRow key={`payer-${payer.id}`} className="odd:bg-white even:bg-cyan-50/30">
+                            <TableRow key={`payer-${payer.id}`} className="odd:bg-background even:bg-muted/20">
                               <TableCell className="font-medium">{payer.name}</TableCell>
                               {settlementParticipants.map((receiver) => {
                                 const amount = settlementMatrix.get(payer.id)?.get(receiver.id) ?? 0;
@@ -556,52 +570,73 @@ export function TripWorkspaceTabs({
                       </Table>
                     </div>
 
-                    <div className="grid gap-2">
-                      {settlements.map((settlement) => (
-                        <div
-                          key={settlement.id}
-                          className={`flex items-center justify-between rounded border border-cyan-200/70 p-2 text-sm ${settlement.isSettled ? "border-emerald-200/80 bg-emerald-50/50" : "bg-white"
-                            }`}
-                        >
-                          <span className={settlement.isSettled ? "text-muted-foreground" : ""}>
-                            <span className="font-semibold text-foreground">{settlement.fromUserName}</span> pays{" "}
-                            <span className="font-semibold text-foreground">{settlement.toUserName}</span>{" "}
-                            <span className="font-semibold text-foreground">{formatCurrency(settlement.amount)}</span>
-                            {settlement.isSettled ? (
-                              <Badge variant="secondary" className="ml-2 align-middle">
-                                Settled
-                              </Badge>
-                            ) : null}
-                          </span>
-                          {settlement.isSettled ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              type="button"
-                              onClick={() => revokeSettlement(settlement.id)}
-                              disabled={isPending}
-                            >
-                              Revoke
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              type="button"
-                              onClick={() => settleItem(settlement.id)}
-                              disabled={isPending}
-                            >
-                              Mark settled
-                            </Button>
-                          )}
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                      {settlementsByPayer.map((group) => (
+                        <div key={group.payerId} className="flex h-full flex-col rounded-xl border border-primary bg-card">
+                          <div className="flex  items-center justify-between bg-primary rounded-t-xl border-b border-border px-4 py-3">
+                            <div className="text-black">
+                              <p className="text-sm font-semibold ">{group.payerName}</p>
+                              <p className="text-xs ">
+                                {group.pendingCount} pending, {group.settledCount} settled
+                              </p>
+                            </div>
+                            <span className="rounded-md bg-muted px-2 py-1 text-sm font-semibold text-foreground">
+                              {formatCurrency(group.total)}
+                            </span>
+                          </div>
+                          <div className="grid gap-2 p-3">
+                            {group.items.map((settlement) => (
+                              <div
+                                key={settlement.id}
+                                className={`space-y-2 rounded-lg border border-border p-3 text-sm ${settlement.isSettled ? "bg-muted/40" : "bg-background"}`}
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <span className={settlement.isSettled ? "text-muted-foreground" : ""}>
+                                    Pays <span className="font-semibold text-foreground">{settlement.toUserName}</span>
+                                  </span>
+                                  <span className="font-semibold text-foreground">{formatCurrency(settlement.amount)}</span>
+                                </div>
+                                <div className="flex items-center justify-between gap-2">
+                                  {settlement.isSettled ? (
+                                    <Badge variant="secondary" className="align-middle">
+                                      Settled
+                                    </Badge>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground">Pending</span>
+                                  )}
+                                  {settlement.isSettled ? (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      type="button"
+                                      onClick={() => revokeSettlement(settlement.id)}
+                                      disabled={isPending}
+                                    >
+                                      Revoke
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      type="button"
+                                      onClick={() => settleItem(settlement.id)}
+                                      disabled={isPending}
+                                    >
+                                      Mark settled
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ))}
                     </div>
                   </>
                 )}
 
-                <div className="rounded border border-emerald-200/70 bg-emerald-50/40 p-3">
-                  <div className="mb-2 text-sm font-medium text-emerald-900">Per Person Spend Overview</div>
+                <div className="rounded border border-border bg-muted/30 p-3">
+                  <div className="mb-2 text-sm font-medium text-foreground">Per Person Spend Overview</div>
                   <div className="grid gap-1">
                     {spendByPerson.map((person) => (
                       <div key={person.id} className="flex items-center justify-between text-sm">

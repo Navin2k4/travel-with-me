@@ -88,7 +88,7 @@ export async function createExpenseAction(input: unknown) {
         },
       });
 
-       await tx.expenseSplit.createMany({
+      await tx.expenseSplit.createMany({
         data: splitRows.map((row) => ({
           expenseId: expense.id,
           userId: row.userId,

@@ -1,12 +1,11 @@
 import { CreateTripForm } from "@/components/trips/create-trip-form";
 import { TripAccessAction } from "@/components/trips/trip-access-action";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   CalendarDotsIcon,
   FlagPennantIcon,
   PathIcon,
   UsersThreeIcon,
-  WalletIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import { requireUser } from "@/lib/auth/guards";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -53,10 +52,10 @@ export default async function Home() {
     : [];
   const plannedWithUserIds = new Set(coParticipants.map((row) => row.userId));
   const getStatusClassName = (status: "PLANNING" | "STARTED" | "ONGOING" | "ENDED") => {
-    if (status === "PLANNING") return "bg-blue-100 text-blue-800 border-blue-200";
-    if (status === "STARTED") return "bg-amber-100 text-amber-800 border-amber-200";
-    if (status === "ONGOING") return "bg-emerald-100 text-emerald-800 border-emerald-200";
-    return "bg-zinc-200 text-zinc-800 border-zinc-300";
+    if (status === "PLANNING") return "bg-primary/15 text-primary border-primary/30";
+    if (status === "STARTED") return "bg-primary/25 text-primary border-primary/30";
+    if (status === "ONGOING") return "bg-primary/35 text-primary-foreground border-primary/30";
+    return "bg-muted text-muted-foreground border-border";
   };
   const getRandomizedKnownPeople = (
     participants: Array<{ userId: string; isActive: boolean; user: { name: string } }>,
@@ -78,78 +77,83 @@ export default async function Home() {
                 No trips yet. Create your first trip from the panel.
               </div>
             ) : (
-              trips.map((trip) => (
-                (() => {
-                  const knownPeople = getRandomizedKnownPeople(trip.participants);
-                  const knownPreview = knownPeople.slice(0, 2).join(", ");
-                  const remaining = Math.max(0, knownPeople.length - 2);
-                  return (
-                <div key={trip.id} className="group relative overflow-hidden rounded-xl border">
-                  <img
-                    src={trip.coverImage || DEFAULT_IMAGE_PLACEHOLDER_URL}
-                    alt={`${trip.title} cover`}
-                    className="h-48 w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-                  />
-                  <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/45 to-black/20" />
-                  <div className="absolute inset-0 z-10 flex flex-col justify-between p-4 text-white">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <span className={`rounded-lg text-[10px] px-1 py-0.5  font-medium ${getStatusClassName(trip.status)}`}>
-                          {trip.status}
-                        </span>
-                        <span className="rounded-full bg-white text-[10px] px-2 py-0.5 text-black">
-                          {trip.dateFlexibility === "MAY_CHANGE" ? "Dates may change" : "Dates fixed"}
-                        </span>
-                      </div>
-                      <TripAccessAction
-                        tripId={trip.id}
-                        hasAccess={trip.participants.some((participant) => participant.userId === currentUser.id && participant.isActive)}
-                        hasPendingRequest={trip.joinRequests.length > 0}
-                      />
-                    </div>
+              trips.map((trip) => {
+                const knownPeople = getRandomizedKnownPeople(trip.participants);
+                const knownPreview = knownPeople.slice(0, 2).join(", ");
+                const remaining = Math.max(0, knownPeople.length - 2);
+                const hasAccess = trip.participants.some(
+                  (participant) => participant.userId === currentUser.id && participant.isActive,
+                );
 
-                    <div className="space-y-2">
-                      <div className="text-xl font-semibold leading-tight">{trip.title}</div>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/95">
-                        <div className="inline-flex items-center gap-1.5">
-                          <CalendarDotsIcon size={14} />
-                          <span>
-                            {trip.startDate ? new Date(trip.startDate).toLocaleDateString() : "-"} to{" "}
-                            {trip.endDate ? new Date(trip.endDate).toLocaleDateString() : "-"}
-                          </span>
-                        </div>
-                        <div className="inline-flex items-center gap-1.5">
-                          <UsersThreeIcon size={14} />
-                          <span>{trip.participants.length} participants</span>
-                        </div>
-                      </div>
+                return (
+                  <div key={trip.id} className="group relative overflow-hidden rounded-2xl border border-border bg-card">
+                    <img
+                      src={trip.coverImage || DEFAULT_IMAGE_PLACEHOLDER_URL}
+                      alt={`${trip.title} cover`}
+                      className="h-64 w-full object-cover brightness-110 transition duration-500 group-hover:scale-[1.02]"
+                    />
+                    <div className="absolute inset-0 bg-linear-to-tl from-background/95 via-background/60 to-transparent" />
+                    <div className="absolute inset-0 md:w-3/5 bg-linear-to-r from-background/92 via-background/70 to-transparent" />
 
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-white/80">
-                        <div className="inline-flex items-center gap-1.5">
-                          <FlagPennantIcon size={13} />
-                          <span>{trip.startPoint || "Start point not set"}</span>
-                        </div>
-                        {trip.transportMode && (
-                          <div className="inline-flex items-center gap-1.5">
-                            <PathIcon size={13} />
-                            <span>{trip.transportMode}</span>
-                          </div>
-                        )}
-                        {knownPeople.length > 0 && (
-                          <div className="ml-auto text-right">
-                            <span>
-                              With {knownPreview}
-                              {remaining > 0 ? ` +${remaining}` : ""}
+                    <div className="absolute inset-0 p-4 md:p-5">
+                      <div className="flex h-full flex-col justify-between">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex flex-wrap items-center gap-2 text-xs">
+                            <span className={`rounded-full border px-2.5 py-1 font-medium backdrop-blur-sm ${getStatusClassName(trip.status)}`}>
+                              {trip.status}
+                            </span>
+                            <span className="rounded-full border border-border bg-card/70 px-2.5 py-1 text-card-foreground backdrop-blur-sm">
+                              {trip.dateFlexibility === "MAY_CHANGE" ? "Dates may change" : "Dates fixed"}
                             </span>
                           </div>
-                        )}
+
+                          <TripAccessAction
+                            tripId={trip.id}
+                            hasAccess={hasAccess}
+                            hasPendingRequest={trip.joinRequests.length > 0}
+                          />
+                        </div>
+
+                        <div className="max-w-3xl rounded-xl ">
+                          <h3 className="text-2xl font-semibold leading-tight text-foreground md:text-3xl">{trip.title}</h3>
+                          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-foreground/90">
+                            <span className="inline-flex items-center gap-1.5">
+                              <CalendarDotsIcon size={14} />
+                              {trip.startDate ? new Date(trip.startDate).toLocaleDateString() : "-"} to{" "}
+                              {trip.endDate ? new Date(trip.endDate).toLocaleDateString() : "-"}
+                            </span>
+                            <span className="inline-flex items-center gap-1.5">
+                              <UsersThreeIcon size={14} />
+                              {trip.participants.length} participants
+                            </span>
+                            <span className="inline-flex items-center gap-1.5">
+                              <FlagPennantIcon size={13} />
+                              {trip.startPoint || "Start point not set"}
+                            </span>
+                            {trip.transportMode ? (
+                              <span className="inline-flex items-center gap-1.5">
+                                <PathIcon size={13} />
+                                {trip.transportMode}
+                              </span>
+                            ) : null}
+                          </div>
+
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            {knownPeople.length > 0 ? (
+                              <span>
+                                With {knownPreview}
+                                {remaining > 0 ? ` +${remaining}` : ""}
+                              </span>
+                            ) : (
+                              <span>No known co-travelers yet</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                  );
-                })()
-              ))
+                );
+              })
             )}
           </CardContent>
         </Card>
