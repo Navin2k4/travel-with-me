@@ -71,8 +71,12 @@ export function PlaceCard({ place, onDelete, onRate, currentUserId }: PlaceCardP
   const currentUserRating = currentUserId
     ? place.ratings.find((item) => item.userId === currentUserId)?.rating
     : undefined;
-  const [ratingInput, setRatingInput] = useState<string>(String(currentUserRating ?? 5));
+  const [ratingInput, setRatingInput] = useState<number>(currentUserRating ?? 0);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setRatingInput(currentUserRating ?? 0);
+  }, [currentUserRating, place.id]);
 
   useEffect(() => {
     if (!open) return;
@@ -143,10 +147,10 @@ export function PlaceCard({ place, onDelete, onRate, currentUserId }: PlaceCardP
   };
 
   return (
-    <Card>
-      <CardContent className="grid gap-3">
+    <div>
+      <div className="grid gap-3">
         <div className="relative overflow-hidden rounded">
-          <img src={place.mediaUrl || DEFAULT_IMAGE_PLACEHOLDER_URL} alt={place.name} className="h-48 w-full object-cover" />
+          <img src={place.mediaUrl || DEFAULT_IMAGE_PLACEHOLDER_URL} alt={place.name} className="h-48 w-full bg-white/20 object-cover" />
           <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/25 to-black/50" />
           <div className="absolute left-3 top-3 text-white">
             <p className="text-sm font-semibold leading-tight">{place.name}</p>
@@ -201,10 +205,10 @@ export function PlaceCard({ place, onDelete, onRate, currentUserId }: PlaceCardP
                       src={visitor.avatar || DEFAULT_USER_AVATAR_URL}
                       alt={visitor.name}
                       title={userRating ? `${visitor.name} • ${userRating}/5` : visitor.name}
-                      className="h-7 w-7 rounded-full border border-white/60 object-cover"
+                      className="h-7 w-7 rounded-full border border-white/60 object-cover rounded-br-2xl"
                     />
                     {userRating ? (
-                      <span className="absolute -bottom-1 -right-1 z-50 rounded bg-primary px-1 text-[10px] leading-4 text-primary-foreground">
+                      <span className="absolute -bottom-1 -right-1 z-50 rounded-full bg-primary px-1.5 text-[10px] leading-4 text-primary-foreground">
                         {userRating}
                       </span>
                     ) : null}
@@ -223,31 +227,38 @@ export function PlaceCard({ place, onDelete, onRate, currentUserId }: PlaceCardP
             </div>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">{placeCategoryLabel(place.category)}</Badge>
-        </div>
-        {currentUserId && (
-          <div className="flex items-center gap-2">
-            <Input
-              className="h-8 w-16"
-              type="number"
-              min="1"
-              max="5"
-              value={ratingInput}
-              onChange={(e) => setRatingInput(e.target.value)}
-            />
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => onRate(place.id, Number(ratingInput))}
-              disabled={isPending || Number(ratingInput) < 1 || Number(ratingInput) > 5}
-            >
-              Rate
-            </Button>
+        <div className="flex items-center justify-between">
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">{placeCategoryLabel(place.category)}</Badge>
           </div>
-        )}
-        {place.notes && <p className="text-xs text-muted-foreground">{place.notes}</p>}
-      </CardContent>
+          {currentUserId && (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((starValue) => (
+                  <button
+                    key={starValue}
+                    type="button"
+                    aria-label={`Rate ${place.name} ${starValue} out of 5`}
+                    title={`${starValue} star${starValue > 1 ? "s" : ""}`}
+                    onClick={() => {
+                      setRatingInput(starValue);
+                      onRate(place.id, starValue);
+                    }}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded transition hover:scale-105"
+                  >
+                    <StarIcon
+                      className={`h-5 w-5 ${starValue <= ratingInput ? "text-amber-400" : "text-muted-foreground/50"}`}
+                      weight={starValue <= ratingInput ? "fill" : "regular"}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        {place.notes && <p className="text-xs bg-white/20 backdrop-blur-sm text-white border border-border rounded-md p-2">{place.notes}</p>}
+      </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg">
@@ -381,6 +392,6 @@ export function PlaceCard({ place, onDelete, onRate, currentUserId }: PlaceCardP
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   );
 }

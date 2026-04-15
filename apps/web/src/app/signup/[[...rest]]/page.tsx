@@ -1,11 +1,14 @@
-import { SignupForm } from "@/components/auth/signup-form";
 import { getCurrentUser } from "@/lib/auth/session";
 import type { Route } from "next";
-import Image from "next/image";
-import { CalendarDotsIcon, MapPinAreaIcon, MoneyIcon, UsersThreeIcon } from "@phosphor-icons/react/dist/ssr";
+import {
+  CalendarDotsIcon,
+  MapPinAreaIcon,
+  MoneyIcon,
+  UsersThreeIcon,
+} from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import brandText from "@/travelwithmetext.png";
+import { SignUp } from "@clerk/nextjs";
 
 type Props = {
   searchParams: Promise<{ invite?: string; next?: string }>;
@@ -39,43 +42,50 @@ export default async function SignupPage({ searchParams }: Props) {
                 <CalendarDotsIcon size={24} weight="fill" />
                 Structured Setup
               </div>
-              <p className="leading-relaxed text-muted-foreground">Add start point, dates, status, and transport details from day one.</p>
+              <p className="leading-relaxed text-muted-foreground">
+                Add start point, dates, status, and transport details from day one.
+              </p>
             </div>
             <div className="rounded-2xl border border-border bg-card/80 p-5 transition-transform hover:-translate-y-1">
               <div className="mb-2 inline-flex items-center gap-2 text-base font-semibold uppercase tracking-wider text-primary">
                 <UsersThreeIcon size={24} weight="fill" />
                 People-First
               </div>
-              <p className="leading-relaxed text-muted-foreground">Add people you traveled with quickly and discover others by search.</p>
+              <p className="leading-relaxed text-muted-foreground">
+                Add people you traveled with quickly and discover others by search.
+              </p>
             </div>
             <div className="rounded-2xl border border-border bg-card/80 p-5 transition-transform hover:-translate-y-1">
               <div className="mb-2 inline-flex items-center gap-2 text-base font-semibold uppercase tracking-wider text-primary">
                 <MoneyIcon size={24} weight="fill" />
                 Accurate Settlements
               </div>
-              <p className="leading-relaxed text-muted-foreground">Track who paid, preview splits, and auto-generate who owes whom.</p>
+              <p className="leading-relaxed text-muted-foreground">
+                Track who paid, preview splits, and auto-generate who owes whom.
+              </p>
             </div>
             <div className="rounded-2xl border border-border bg-card/80 p-5 transition-transform hover:-translate-y-1">
               <div className="mb-2 inline-flex items-center gap-2 text-base font-semibold uppercase tracking-wider text-primary">
                 <MapPinAreaIcon size={24} weight="fill" />
                 Place Journal
               </div>
-              <p className="leading-relaxed text-muted-foreground">Store visited places with media and ratings so memories stay organized.</p>
+              <p className="leading-relaxed text-muted-foreground">
+                Store visited places with media and ratings so memories stay organized.
+              </p>
             </div>
           </div>
         </section>
 
         <div className="relative grid gap-4">
-          <SignupForm inviteToken={params.invite} nextPath={params.next} />
-          <p className="text-center text-base font-medium text-muted-foreground">
-            Already have an account?{" "}
-            <Link
-              href={`/login${params.invite ? `?invite=${encodeURIComponent(params.invite)}` : ""}` as Route}
-              className="text-primary underline decoration-2 underline-offset-4 transition-colors hover:text-primary/80"
-            >
-              Login
-            </Link>
-          </p>
+          <div className="mx-auto flex w-full max-w-xl flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl">
+            <SignUp
+              routing="path"
+              path="/signup"
+              signInUrl={`/login${params.invite ? `?invite=${encodeURIComponent(params.invite)}` : ""}`}
+              forceRedirectUrl={params.next || "/"}
+              fallbackRedirectUrl={params.next || "/"}
+            />
+          </div>
         </div>
       </div>
     </main>

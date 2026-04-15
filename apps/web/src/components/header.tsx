@@ -1,11 +1,11 @@
 import Link from "next/link";
 import type { Route } from "next";
-import Image from "next/image";
-import { logoutUserAction } from "@/lib/actions/auth";
 import { getCurrentUser } from "@/lib/auth/session";
 import { DEFAULT_USER_AVATAR_URL } from "@/lib/constants";
-import brandMain from "@/travelwithmemain.png";
+import { Show, SignOutButton, UserAvatar } from "@clerk/nextjs";
 import { Button } from "./ui/button";
+import { UserMenuButton } from "@/components/auth/user-menu-button";
+import { dark } from "@clerk/ui/themes";
 
 export default async function Header() {
   const user = await getCurrentUser();
@@ -21,6 +21,7 @@ export default async function Header() {
           <Link href={"/" as Route} className="inline-flex text-2xl font-bold items-center transition-transform hover:-translate-y-0.5 hover:drop-shadow-md">
             TraMe
           </Link>
+
           <nav className="hidden sm:flex items-center gap-2">
             {links.map(({ to, label }) => {
               return (
@@ -35,41 +36,19 @@ export default async function Header() {
             })}
           </nav>
         </div>
-
-        <div className="flex items-center gap-3">
-          {!user ? (
-            <div className="flex items-center gap-2">
-              <Link href={"/login" as Route}>
-                <button className="rounded-full border border-border bg-secondary px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-secondary-foreground transition-colors hover:bg-secondary/80">
-                  Login
-                </button>
-              </Link>
-              <Link href={"/signup" as Route}>
-                <button className="rounded-full border border-border bg-primary px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary-foreground transition-colors hover:bg-primary/90">
-                  Sign Up
-                </button>
-              </Link>
+        <div className="flex items-center gap-2">
+          <Show when="signed-in">
+            <Link href="/profile">
+              <UserAvatar />
+            </Link>
+            <div className="bg-primary text-sm px-2 py-1 text-black rounded-full border border-border p-1">
+              <SignOutButton
+                redirectUrl="/login"
+              >
+                Sign Out
+              </SignOutButton>
             </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <Link href={"/profile" as Route} className="group flex items-center gap-2 rounded-full border border-border bg-card px-1.5 py-1.5 transition-colors hover:bg-accent">
-                <img
-                  src={user.avatar || DEFAULT_USER_AVATAR_URL}
-                  alt={user.name}
-                  className="h-7 w-7 rounded-full border border-border object-cover"
-                />
-                <span className="pr-3 text-xs font-semibold uppercase tracking-wider text-card-foreground hidden sm:inline-block">{user.name}</span>
-              </Link>
-              <form action={logoutUserAction}>
-                <Button
-                    type="submit"
-                    className="rounded-full border border-border bg-primary px-4 py-1.5 text-xs font-semibold uppercase tracking-wider  transition-colors hover:bg-secondary/80"
-                >
-                  Logout
-                </Button>
-              </form>
-            </div>
-          )}
+          </Show>
         </div>
       </div>
     </header>

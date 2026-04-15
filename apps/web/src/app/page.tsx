@@ -11,6 +11,8 @@ import { requireUser } from "@/lib/auth/guards";
 import { getCurrentUser } from "@/lib/auth/session";
 import { DEFAULT_IMAGE_PLACEHOLDER_URL } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
+import { Share2Icon } from "lucide-react";
+import Link from "next/link";
 
 export default async function Home() {
   await requireUser("/");
@@ -41,14 +43,14 @@ export default async function Home() {
   const myTripIds = myTripMemberships.map((m) => m.tripId);
   const coParticipants = myTripIds.length
     ? await prisma.tripParticipant.findMany({
-        where: {
-          tripId: { in: myTripIds },
-          userId: { not: currentUser.id },
-          isActive: true,
-        },
-        select: { userId: true },
-        distinct: ["userId"],
-      })
+      where: {
+        tripId: { in: myTripIds },
+        userId: { not: currentUser.id },
+        isActive: true,
+      },
+      select: { userId: true },
+      distinct: ["userId"],
+    })
     : [];
   const plannedWithUserIds = new Set(coParticipants.map((row) => row.userId));
   const getStatusClassName = (status: "PLANNING" | "STARTED" | "ONGOING" | "ENDED") => {
@@ -113,6 +115,16 @@ export default async function Home() {
                             hasPendingRequest={trip.joinRequests.length > 0}
                           />
                         </div>
+                        {trip.status === "ENDED" && (
+
+                          <Link
+                            href={`/trips/${trip.id}/story`}
+                            target="_blank"
+                            className="absolute bottom-3 right-3 flex items-center gap-2 rounded-full border bg-primary/10 px-3 py-1.5 font-medium text-primary backdrop-blur-sm"
+                          >
+                            <Share2Icon className="h-5 w-5" /> <span className="text-sm">Story</span>
+                          </Link>
+                        )}
 
                         <div className="max-w-3xl rounded-xl ">
                           <h3 className="text-2xl font-semibold leading-tight text-foreground md:text-3xl">{trip.title}</h3>

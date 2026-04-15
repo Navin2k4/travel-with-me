@@ -72,6 +72,22 @@
     --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.56 0.021 213.5);
+    --clerk-color-primary: #2F3037;
+  --clerk-color-primary-foreground: #FFFFFF;
+  --clerk-color-danger: #EF4444;
+  --clerk-color-success: #22C543;
+  --clerk-color-warning: #F36B16;
+  --clerk-color-neutral: #000000;
+  --clerk-color-foreground: #000000;
+  --clerk-color-muted-foreground: #747686;
+  --clerk-color-background: #FFFFFF;
+  --clerk-color-input: #FFFFFF;
+  --clerk-color-input-foreground: #000000;
+  --clerk-color-ring: #000000;
+  --clerk-color-shimmer: #FFFFFF;
+  --clerk-color-modal-backdrop: #000000;
+  --clerk-border-radius: 0.375rem;
+  --clerk-spacing: 1rem;
 }
 
 @theme inline {
@@ -115,6 +131,25 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
+    --clerk-color-primary: #7CCF00;
+  --clerk-color-primary-foreground: #000000;
+  --clerk-color-danger: #EF4444;
+  --clerk-color-success: #22C543;
+  --clerk-color-warning: #F36B16;
+  --clerk-color-neutral: #FFFFFF;
+  --clerk-color-foreground: #FFFFFF;
+  --clerk-color-muted-foreground: #747686;
+  --clerk-color-background: #000000;
+  --clerk-color-input: #FFFFFF;
+  --clerk-color-input-foreground: #000000;
+  --clerk-color-ring: #000000;
+  --clerk-color-shimmer: #FFFFFF;
+  --clerk-color-modal-backdrop: #7CCF00;
+  --clerk-border-radius: 0.375rem;
+  --clerk-spacing: 1rem;
+  --clerk-color-muted: #000000;
+  --clerk-color-border: #7CCF00;
+  --clerk-color-shadow: #7CCF00;
 }
 
 @layer base {

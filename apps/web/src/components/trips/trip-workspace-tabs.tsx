@@ -5,7 +5,6 @@ import { InfoIcon, PencilSimpleIcon, TrashIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { AddExpenseForm } from "@/components/expenses/add-expense-form";
 import { VisitedPlacesPanel } from "@/components/places/visited-places-panel";
-import { InviteManager } from "@/components/trips/invite-manager";
 import { TripDashboardTab } from "@/components/trips/trip-dashboard-tab";
 import { TripDetailTab } from "@/components/trips/trip-detail-tab";
 import { TripUserInformationTab } from "@/components/trips/trip-user-information-tab";

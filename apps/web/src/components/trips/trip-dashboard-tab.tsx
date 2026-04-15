@@ -117,16 +117,16 @@ export function TripDashboardTab({
     amount: group.total,
     color:
       index === 0
-        ? "color-mix(in oklch, var(--primary) 100%, transparent)"
+        ? "color-mix(in oklch, var(--primary) 90%, transparent)"
         : index === 1
-          ? "color-mix(in oklch, var(--primary) 84%, transparent)"
+          ? "color-mix(in oklch, var(--primary) 80%, transparent)"
           : index === 2
-            ? "color-mix(in oklch, var(--primary) 68%, transparent)"
+            ? "color-mix(in oklch, var(--primary) 70%, transparent)"
             : index === 3
-              ? "color-mix(in oklch, var(--primary) 52%, transparent)"
+              ? "color-mix(in oklch, var(--primary) 60%, transparent)"
               : index === 4
-                ? "color-mix(in oklch, var(--primary) 40%, transparent)"
-                : "color-mix(in oklch, var(--primary) 28%, transparent)",
+                ? "color-mix(in oklch, var(--primary) 50%, transparent)"
+                : "color-mix(in oklch, var(--primary) 40%, transparent)",
   }));
   const remainingTotal = expenseByCategory
     .slice(6)
@@ -138,7 +138,7 @@ export function TripDashboardTab({
         key: "bar-other",
         category: "Other",
         amount: remainingTotal,
-        color: "color-mix(in oklch, var(--primary) 20%, transparent)",
+        color: "color-mix(in oklch, var(--primary) 30%, transparent)",
       },
     ]
     : barRowsBase;
@@ -278,6 +278,12 @@ export function TripDashboardTab({
                           <Cell key={`cell-${row.key}`} fill={`var(--color-${row.key})`} />
                         ))}
                         <LabelList
+                          dataKey="category"
+                          position="insideLeft"
+                          offset={6}
+                          className="fill-foreground text-xs font-medium"
+                        />
+                        <LabelList
                           dataKey="amount"
                           position="right"
                           offset={8}
@@ -286,13 +292,6 @@ export function TripDashboardTab({
                       </Bar>
                     </BarChart>
                   </ChartContainer>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {barRows.map((row) => (
-                      <Badge key={`badge-${row.key}`} variant="secondary" className="text-xs bg-primary/30 text-muted-foreground p-2 rounded-xl">
-                        {row.category}
-                      </Badge>
-                    ))}
-                  </div>
                 </div>
               )}
             </div>

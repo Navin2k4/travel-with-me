@@ -18,10 +18,13 @@
     "db:migrate": "turbo -F @travel-with-me/db db:migrate"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.2.0",
+    "@clerk/ui": "^1.6.0",
     "@react-google-maps/api": "^2.20.8",
     "@travel-with-me/env": "*",
     "dotenv": "^17.2.2",
     "react-is": "^19.2.5",
+    "use-sound": "^5.0.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {

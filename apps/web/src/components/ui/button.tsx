@@ -1,7 +1,9 @@
+"use client"
+
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
-
+import useSound from "use-sound"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
@@ -44,19 +46,32 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  onClick,
+  disabled,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
   }) {
   const Comp = asChild ? Slot.Root : "button"
+  const [playClickSound] = useSound("/button_click_effect.wav", {
+    interrupt: true,
+  })
+
+  const handleClick: React.MouseEventHandler<HTMLButtonElement> = (event) => {
+    onClick?.(event)
+    if (event.defaultPrevented || disabled) return
+    playClickSound()
+  }
 
   return (
     <Comp
       data-slot="button"
       data-variant={variant}
       data-size={size}
+      onClick={handleClick}
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={disabled}
       {...props}
     />
   )
