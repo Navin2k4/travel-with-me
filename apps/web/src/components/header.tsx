@@ -38,7 +38,7 @@ export default async function Header() {
         </div>
         <div className="flex items-center gap-2">
           <Show when="signed-in">
-            <Link href="/profile">
+            <Link href={"/profile" as Route}>
               <UserAvatar />
             </Link>
             <div className="bg-primary text-sm px-2 py-1 text-black rounded-full border border-border p-1">
