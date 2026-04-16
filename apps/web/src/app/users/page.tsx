@@ -22,7 +22,7 @@ export default async function UsersPage() {
   });
 
   return (
-    <main className="mx-auto grid w-full max-w-6xl gap-6 p-4 lg:grid-cols-[1.6fr_1fr]">
+    <main className="mx-auto grid w-full max-w-7xl gap-6 p-4 lg:grid-cols-[1.6fr_1fr]">
       <Card>
         <CardHeader>
           <CardTitle>Users</CardTitle>

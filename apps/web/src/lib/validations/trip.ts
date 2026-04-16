@@ -46,6 +46,10 @@ export const RequestJoinTripSchema = z.object({
   tripId: z.string().min(1),
 });
 
+export const ToggleTripWishlistSchema = z.object({
+  tripId: z.string().min(1),
+});
+
 export const ReviewJoinRequestSchema = z.object({
   tripId: z.string().min(1),
   requestId: z.string().min(1),

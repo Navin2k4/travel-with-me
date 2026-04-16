@@ -131,6 +131,10 @@ model User {
   createdInvites  TripInvite[]      @relation("InviteCreator")
   tripJoinRequests TripJoinRequest[] @relation("JoinRequestUser")
   plannedPlaces   TripPlannedPlace[] @relation("PlannedPlaceCreatedBy")
+  wishlistedTrips TripWishlist[]
+  communityThreads TripCommunityThread[] @relation("CommunityThreadAuthor")
+  communityMessages TripCommunityMessage[] @relation("CommunityMessageAuthor")
+  communityThreadVotes TripCommunityThreadVote[]
 
   @@index([name])
 }
@@ -160,9 +164,77 @@ model Trip {
   plannedPlaces TripPlannedPlace[]
   invites       TripInvite[]
   joinRequests  TripJoinRequest[]
+  wishlistedBy  TripWishlist[]
+  communityThreads TripCommunityThread[]
 
   @@index([createdById, createdAt])
   @@index([startDate, endDate])
+}
+
+model TripCommunityThread {
+  id        String                    @id @default(cuid())
+  tripId     String
+  authorId   String
+  title      String
+  body       String
+  isDeleted  Boolean                  @default(false)
+  createdAt  DateTime                 @default(now())
+  updatedAt  DateTime                 @updatedAt
+
+  trip       Trip                     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  author     User                     @relation("CommunityThreadAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  messages   TripCommunityMessage[]
+  votes      TripCommunityThreadVote[]
+
+  @@index([tripId, createdAt])
+  @@index([authorId, createdAt])
+}
+
+model TripCommunityMessage {
+  id         String                   @id @default(cuid())
+  threadId   String
+  authorId   String
+  parentId   String?
+  body       String
+  isDeleted  Boolean                  @default(false)
+  createdAt  DateTime                 @default(now())
+  updatedAt  DateTime                 @updatedAt
+
+  thread     TripCommunityThread      @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  author     User                     @relation("CommunityMessageAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  parent     TripCommunityMessage?    @relation("CommunityMessageReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    TripCommunityMessage[]   @relation("CommunityMessageReplies")
+
+  @@index([threadId, createdAt])
+  @@index([authorId, createdAt])
+  @@index([parentId])
+}
+
+model TripCommunityThreadVote {
+  threadId   String
+  userId     String
+  value      Int
+  createdAt  DateTime                 @default(now())
+  updatedAt  DateTime                 @updatedAt
+
+  thread     TripCommunityThread      @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user       User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([threadId, userId])
+  @@index([userId, createdAt])
+}
+
+model TripWishlist {
+  userId    String
+  tripId    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@id([userId, tripId])
+  @@index([tripId, createdAt])
+  @@index([userId, createdAt])
 }
 
 model TripPlannedPlace {

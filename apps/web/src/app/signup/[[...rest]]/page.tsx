@@ -24,7 +24,7 @@ export default async function SignupPage({ searchParams }: Props) {
       <div className="pointer-events-none absolute top-10 right-10 h-[30vh] w-[30vh] rounded-full bg-primary/10 blur-3xl" />
       <div className="pointer-events-none absolute bottom-10 left-10 h-[40vh] w-[40vh] rounded-full bg-accent/30 blur-3xl" />
 
-      <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-8 rounded-3xl border border-border bg-card/60 p-6 text-foreground shadow-sm backdrop-blur-2xl sm:p-10 lg:grid-cols-[1.2fr_1fr]">
+      <div className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-8 rounded-3xl border border-border bg-card/60 p-6 text-foreground shadow-sm backdrop-blur-2xl sm:p-10 lg:grid-cols-[1.2fr_1fr]">
         <section className="grid gap-6">
           <div className="space-y-4">
             <div className="font-heading text-4xl leading-tight font-bold tracking-tight md:text-5xl">

@@ -7,6 +7,7 @@ import {
   AssignParticipantTagSchema,
   CreateTripSchema,
   RequestJoinTripSchema,
+  ToggleTripWishlistSchema,
   ReviewJoinRequestSchema,
   UpdateTripCoverImageSchema,
   UpdateTripSchema,
@@ -237,6 +238,48 @@ export async function requestJoinTripAction(input: unknown) {
   revalidatePath("/");
   revalidatePath(`/trips/${tripId}`);
   return { ok: true as const };
+}
+
+export async function toggleTripWishlistAction(input: unknown) {
+  const parsed = ToggleTripWishlistSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false as const, error: parsed.error.flatten() };
+  }
+
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { ok: false as const, error: "You must be logged in." };
+
+  const { tripId } = parsed.data;
+
+  try {
+    const existing = await prisma.tripWishlist.findUnique({
+      where: { userId_tripId: { userId: currentUser.id, tripId } },
+      select: { userId: true },
+    });
+
+    if (existing) {
+      await prisma.tripWishlist.delete({
+        where: { userId_tripId: { userId: currentUser.id, tripId } },
+      });
+    } else {
+      await prisma.tripWishlist.create({
+        data: {
+          userId: currentUser.id,
+          tripId,
+        },
+      });
+    }
+
+    revalidatePath("/");
+    revalidatePath("/profile");
+    revalidatePath(`/trips/${tripId}`);
+    return { ok: true as const, data: { wishlisted: !existing } };
+  } catch (error) {
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error.message : "Failed to update wishlist.",
+    };
+  }
 }
 
 export async function reviewJoinRequestAction(input: unknown) {

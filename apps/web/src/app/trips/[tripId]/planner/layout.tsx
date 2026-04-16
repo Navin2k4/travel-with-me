@@ -34,7 +34,7 @@ export default async function PlannerLayout({ children, params }: PlannerLayoutP
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl gap-4 p-4">
+    <div className="mx-auto grid w-full max-w-7xl gap-4 p-4">
       <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
         <p className="text-sm font-medium text-foreground">Trip Planner Workspace</p>
         <Link

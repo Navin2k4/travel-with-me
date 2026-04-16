@@ -7,9 +7,10 @@ import { DEFAULT_IMAGE_PLACEHOLDER_URL } from "@/lib/constants";
 import { Card } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
 import { decimalAmountToNumber } from "@/lib/money";
-import { ShareNetwork } from "@phosphor-icons/react/dist/ssr";
+import { ChatCircleDots, ShareNetwork } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import type { Route } from "next";
 
 type Props = {
   params: Promise<{ tripId: string }>;
@@ -94,7 +95,7 @@ export default async function TripPage({ params }: Props) {
   );
 
   return (
-    <main className="mx-auto grid w-full max-w-6xl p-4">
+    <main className="mx-auto grid w-full max-w-7xl p-4">
       <Card className="m-0 rounded-xl border-border p-0">
         <div className="relative overflow-hidden rounded-xl">
           <img
@@ -109,7 +110,16 @@ export default async function TripPage({ params }: Props) {
               {trip.description || "No description provided."}
             </p>
           </div>
-          <div className="absolute top-0 right-0 p-4 text-foreground md:p-6">
+          <div className="absolute top-0 right-0 flex gap-2 p-4 text-foreground md:p-6">
+            <Button
+              asChild
+              aria-label="Open community discussion"
+              className="rounded-full border border-border bg-primary h-12 w-12 text-xs font-semibold uppercase tracking-wider text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <Link href={`/trips/${tripId}/community` as Route} target="_blank" rel="noopener noreferrer">
+                <ChatCircleDots className="h-5 w-5" weight="bold" />
+              </Link>
+            </Button>
             <Button
               asChild
               aria-label="Open shareable trip story"

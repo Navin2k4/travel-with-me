@@ -113,7 +113,7 @@ export function TripStoryView({ trip }: TripStoryViewProps) {
               className="flex justify-center items-center w-full"
             >
               <span className="inline-flex rounded-full text-center justify-center items-center border border-primary/35 bg-primary/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                <span className="text-primary">Konw</span> our Journey through Travel With Me
+                <span className="text-primary">Know </span> our Journey through Travel With Me
               </span>
             </motion.span>
        
