@@ -9,6 +9,10 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { SignIn } from "@clerk/nextjs";
 import { getCurrentUser } from "@/lib/auth/session";
+import Image from "next/image";
+import { MoneyManageComponent } from "@/components/landing/MoneyManageComponent";
+import { MockTripsLanding } from "@/components/landing/MockTripsLanding";
+import { CtoLanding } from "@/components/landing/CtoLanding";
 
 type Props = {
   searchParams: Promise<{ invite?: string; next?: string }>;
@@ -20,74 +24,49 @@ export default async function LoginPage({ searchParams }: Props) {
   if (user) redirect((params.next || "/") as Route);
 
   return (
-    <main className="relative flex min-h-[calc(100vh-56px)] w-full items-center justify-center overflow-hidden bg-background p-4 sm:p-8">
-      <div className="pointer-events-none absolute top-10 right-10 h-[30vh] w-[30vh] rounded-full bg-primary/10 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-10 left-10 h-[40vh] w-[40vh] rounded-full bg-accent/30 blur-3xl" />
+    <section className="relative w-full bg-[#050505] items-center justify-center py-8 overflow-hidden">
+      {/* Optional faint background glow here */}
+      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-96 h-96 bg-[#b4f039]/5 rounded-full blur-[128px] pointer-events-none" />
+      <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center relative z-10">
 
-      <div className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-8 rounded-3xl border border-border bg-card/60 p-6 text-foreground shadow-sm backdrop-blur-2xl sm:p-10 lg:grid-cols-[1.2fr_1fr]">
-        <section className="grid gap-6">
-          <div className="space-y-4">
-            <div className="font-heading text-4xl leading-tight font-bold tracking-tight md:text-5xl">
-              Welcome back to your <br />
-              <span className="text-primary">travel workspace</span>
-            </div>
-            <div className="max-w-xl rounded-2xl border border-border bg-card/80 p-5 text-lg text-muted-foreground">
-              Continue planning trips, tracking group expenses, and documenting places together.
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
-            <div className="rounded-2xl border border-border bg-card/80 p-5 transition-transform hover:-translate-y-1">
-              <div className="mb-2 inline-flex items-center gap-2 text-base font-semibold uppercase tracking-wider text-primary">
-                <CalendarDotsIcon size={24} weight="fill" />
-                Trip Lifecycle
-              </div>
-              <p className="leading-relaxed text-muted-foreground">
-                Move trips from planning to started, ongoing, and ended with clear visibility.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-border bg-card/80 p-5 transition-transform hover:-translate-y-1">
-              <div className="mb-2 inline-flex items-center gap-2 text-base font-semibold uppercase tracking-wider text-primary">
-                <MoneyIcon size={24} weight="fill" />
-                Expense Engine
-              </div>
-              <p className="leading-relaxed text-muted-foreground">
-                Split by equal, exact amount, percentage, or shares and preview before saving.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-border bg-card/80 p-5 transition-transform hover:-translate-y-1">
-              <div className="mb-2 inline-flex items-center gap-2 text-base font-semibold uppercase tracking-wider text-primary">
-                <MapPinAreaIcon size={24} weight="fill" />
-                Visited Places
-              </div>
-              <p className="leading-relaxed text-muted-foreground">
-                Capture photos, notes, and ratings per person for each place in your timeline.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-border bg-card/80 p-5 transition-transform hover:-translate-y-1">
-              <div className="mb-2 inline-flex items-center gap-2 text-base font-semibold uppercase tracking-wider text-primary">
-                <UsersThreeIcon size={24} weight="fill" />
-                Safe Collaboration
-              </div>
-              <p className="leading-relaxed text-muted-foreground">
-                Use invite links, join requests, and creator approval to control access.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <div className="relative grid gap-4">
-          <div className="mx-auto flex w-full max-w-xl flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl">
-            <SignIn
-              routing="path"
-              path="/login"
-              signUpUrl={`/signup${params.invite ? `?invite=${encodeURIComponent(params.invite)}` : ""}`}
-              forceRedirectUrl={params.next || "/"}
-              fallbackRedirectUrl={params.next || "/"}
-            />
+        {/* Left Column: Text & CTA */}
+        <div className="flex flex-col items-start text-left">
+          <span className="text-gray-400 text-xs font-semibold tracking-widest uppercase mb-6 ">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white  leading-[1.1]">
+              <span className="text-primary">Tra</span>vel With<span className="text-primary"> Me</span>
+            </h1>
+          </span>
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-6 leading-[1.1]">
+            The ultimate <br className="hidden lg:block" />
+            workspace for <br className="hidden lg:block" />
+            <span className="text-[#b4f039]">group travel.</span>
+          </h1>
+          <p className="text-gray-400 text-base md:text-lg lg:text-xl max-w-xl mb-10 leading-relaxed font-medium">
+            Collaboratively plan trips, track group expenses, and document places together, all in one place. Say goodbye to chaotic spreadsheets.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+            <button className="bg-[#b4f039] text-black px-8 py-3.5 rounded-xl font-bold text-sm tracking-wide hover:bg-[#a0d832] transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-[#b4f039] focus:ring-offset-[#0a0a0a]">
+              Start Planning Your Trip
+            </button>
           </div>
         </div>
+
+        {/* Right Column: Mockup */}
+        <div className="relative w-full rounded-2xl items-center justify-center overflow-hidden flex flex-col md:flex-row min-h-[500px]">
+
+          <SignIn
+            routing="path"
+            path="/login"
+            signUpUrl={`/signup${params.invite ? `?invite=${encodeURIComponent(params.invite)}` : ""}`}
+            forceRedirectUrl={params.next || "/"}
+            fallbackRedirectUrl={params.next || "/"}
+          />
+
+        </div>
       </div>
-    </main>
+      <MockTripsLanding />
+      <MoneyManageComponent />
+      <CtoLanding />
+    </section>
   );
 }

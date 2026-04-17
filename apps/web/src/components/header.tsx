@@ -22,20 +22,21 @@ export default async function Header() {
           <Link href={"/" as Route} className="inline-flex text-2xl font-bold items-center transition-transform hover:-translate-y-0.5 hover:drop-shadow-md">
             <span className="text-primary">Tra</span>vel With<span className="text-primary"> Me</span>
           </Link>
-
-          <nav className="hidden sm:flex items-center gap-2">
-            {links.map(({ to, label }) => {
-              return (
-                <Link
-                  key={to}
-                  href={to as Route}
-                  className="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                >
-                  {label}
-                </Link>
-              );
-            })}
-          </nav>
+          <Show when="signed-in">
+            <nav className="hidden sm:flex items-center gap-2">
+              {links.map(({ to, label }) => {
+                return (
+                  <Link
+                    key={to}
+                    href={to as Route}
+                    className="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    {label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </Show>
         </div>
         <div className="flex items-center gap-2">
           <Show when="signed-in">
